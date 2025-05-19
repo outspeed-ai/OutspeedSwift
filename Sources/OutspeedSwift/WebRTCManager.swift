@@ -228,6 +228,42 @@ class WebRTCManager: NSObject, ObservableObject {
         }
     }
     
+    func sendAudioData(_ data: Data) {
+        guard connectionStatus == .connected,
+              let audioTrack = audioTrack else {
+            return
+        }
+        
+        // Convert the audio data to the format expected by WebRTC
+        // This implementation assumes data is already in the proper PCM format
+        // We could add more processing here if needed for specific format conversions
+        
+        // Create a buffer from the data
+        let buffer = RTCDataBuffer(data: data, isBinary: true)
+        
+        // Send the audio data over the data channel
+        // For binary audio data, we'll use a specific type identifier
+        if let dc = dataChannel, dc.readyState == .open {
+            do {
+                // Create an envelope for the audio data
+                let audioEvent: [String: Any] = [
+                    "type": "user_audio_data",
+                    "timestamp": Date().timeIntervalSince1970
+                ]
+                
+                // Serialize the event metadata
+                let jsonData = try JSONSerialization.data(withJSONObject: audioEvent)
+                let metadataBuffer = RTCDataBuffer(data: jsonData, isBinary: false)
+                
+                // First send metadata, then the binary audio
+                dc.sendData(metadataBuffer)
+                dc.sendData(buffer)
+            } catch {
+                print("Error sending audio data: \(error)")
+            }
+        }
+    }
+    
     // MARK: - Private Methods
     
     private func setupPeerConnection() {
