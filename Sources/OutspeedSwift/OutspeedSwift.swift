@@ -241,7 +241,7 @@ public class OutspeedSDK : ObservableObject {
     // MARK: - Conversation
 
     public class Conversation: @unchecked Sendable {
-        private let connection: WebRTCManager
+        public let connection: WebRTCManager
         private let callbacks: Callbacks
 
         private let modeLock = NSLock()
@@ -318,7 +318,7 @@ public class OutspeedSDK : ObservableObject {
         ///   - clientTools: Client tools callbacks (optional)
         ///   - apiKey: API key for the conversation
         /// - Returns: A started `Conversation` instance
-        static func startSession(callbacks: Callbacks = Callbacks(), apiKey: String) async throws -> Conversation {
+        public static func startSession(callbacks: Callbacks = Callbacks(), apiKey: String) async throws -> Conversation {
             // Step 2: Create the WebSocket connection
             let connection = WebRTCManager()
 
