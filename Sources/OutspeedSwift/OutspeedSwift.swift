@@ -296,7 +296,7 @@ public class OutspeedSDK : ObservableObject {
         ///   - clientTools: Client tools callbacks (optional)
         ///   - apiKey: API key for the conversation
         /// - Returns: A started `Conversation` instance
-        public static func startSession(config: SessionConfig, callbacks: Callbacks = Callbacks(), apiKey: String?, provider: Provider = .openai) async throws -> Conversation {
+        public static func startSession(config: SessionConfig, callbacks: Callbacks = Callbacks(), apiKey: String?, provider: Provider = .outspeed) async throws -> Conversation {
             // Step 2: Create the WebSocket connection
             #if os(iOS)
             // Prevent usage on iOS versions newer than 18.3.1
