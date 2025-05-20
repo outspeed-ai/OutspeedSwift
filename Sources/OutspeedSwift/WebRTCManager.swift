@@ -1,19 +1,4 @@
 import WebRTC
-import AVFoundation
-import Foundation
-
-// MARK: - Connection Status
-enum ConnectionStatus {
-    case connected
-    case disconnected
-}
-
-// MARK: - Conversation Item
-public struct ConversationItem: Identifiable {
-    public let id: String       // item_id from the JSON
-    public let role: String     // "user" / "assistant"
-    public var text: String     // transcript
-}
 
 // MARK: - WebRTCManager
 class WebRTCManager: NSObject, ObservableObject {
@@ -47,25 +32,15 @@ class WebRTCManager: NSObject, ObservableObject {
     
     // Flag to track if a layout update is in progress
     private var isUpdatingUI = false
-    private var currentApiKey: String
-    
-    init(apiKey: String) {
-        self.currentApiKey = apiKey
-        super.init()
-    }
-    
-    
+    private var callbacks: Callbacks
+
+    // MARK: - Public Properties
     // MARK: - Public Methods
     
-
-    private func requestMicrophonePermission() {
-        AVAudioSession.sharedInstance().requestRecordPermission { granted in
-            print("Microphone permission granted: \(granted)")
-        }
-    }
     /// Start a WebRTC connection using a standard API key for local testing.
     func startConnection(
         apiKey: String,
+        callbacks: Callbacks,
         modelName: String,
         systemMessage: String,
         voice: String,
@@ -73,7 +48,6 @@ class WebRTCManager: NSObject, ObservableObject {
     ) {
         conversation.removeAll()
         conversationMap.removeAll()
-        
         
         // Store updated config
         self.modelName = modelName
@@ -99,62 +73,41 @@ class WebRTCManager: NSObject, ObservableObject {
             mandatoryConstraints: ["levelControl": "true"],
             optionalConstraints: nil
         )
-        
-        // Create and store the offer in a Task to avoid data races
-        Task { @MainActor in
-            do {
-                // Create the offer and set local description on the main thread
-                let sdp = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<RTCSessionDescription, Error>) in
-                    DispatchQueue.main.async {
-                        self.peerConnection?.offer(for: constraints) { sdp, error in
-                            if let error = error {
-                                continuation.resume(throwing: error)
-                            } else if let sdp = sdp {
-                                continuation.resume(returning: sdp)
-                            } else {
-                                continuation.resume(throwing: NSError(domain: "WebRTCManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to create offer: no SDP and no error"]))
-                            }
+        peerConnection.offer(for: constraints) { [weak self] sdp, error in
+            guard let self = self,
+                  let sdp = sdp,
+                  error == nil else {
+                print("Failed to create offer: \(String(describing: error))")
+                return
+            }
+            // Set local description
+            peerConnection.setLocalDescription(sdp) { [weak self] error in
+                guard let self = self, error == nil else {
+                    print("Failed to set local description: \(String(describing: error))")
+                    return
+                }
+                
+                Task {
+                    do {
+                        guard let localSdp = peerConnection.localDescription?.sdp else {
+                            return
+                        }                        
+                        // Handle connection based on provider
+                        switch self.provider {
+                        case .openai:
+                            let answerSdp = try await self.fetchRemoteSDPOpenAI(apiKey: apiKey, localSdp: localSdp)
+                            await self.setRemoteDescription(answerSdp)
+                        case .outspeed:
+                            // First get ephemeral key
+                            let ephemeralKey = try await self.getEphemeralKeyOutspeed(apiKey: apiKey)
+                            // Then establish WebRTC connection
+                            try await self.fetchRemoteSDPOutspeed(ephemeralKey: ephemeralKey, localSdp: localSdp)
                         }
+                    } catch {
+                        print("Error in connection process: \(error)")
+                        self.connectionStatus = .disconnected
                     }
                 }
-                
-                try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-                    DispatchQueue.main.async {
-                        self.peerConnection?.setLocalDescription(sdp) { error in
-                            if let error = error {
-                                continuation.resume(throwing: error)
-                            } else {
-                                continuation.resume()
-                            }
-                        }
-                    }
-                }
-                
-                // Get the local SDP on the main thread
-                let localSdp = await withCheckedContinuation { (continuation: CheckedContinuation<String?, Never>) in
-                    DispatchQueue.main.async {
-                        continuation.resume(returning: self.peerConnection?.localDescription?.sdp)
-                    }
-                }
-                
-                guard let localSdp = localSdp else {
-                    throw NSError(domain: "WebRTCManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Missing local SDP after setting local description"])
-                }
-                
-                // Handle connection based on provider
-                switch self.provider {
-                case .openai:
-                    let answerSdp = try await self.fetchRemoteSDPOpenAI(apiKey: apiKey, localSdp: localSdp)
-                    await self.setRemoteDescription(answerSdp)
-                case .outspeed:
-                    // First get ephemeral key
-                    let ephemeralKey = try await self.getEphemeralKeyOutspeed(apiKey: apiKey)
-                    // Then establish WebRTC connection
-                    try await self.fetchRemoteSDPOutspeed(ephemeralKey: ephemeralKey, localSdp: localSdp)
-                }
-            } catch {
-                print("Error in connection process: \(error)")
-                self.connectionStatus = .disconnected
             }
         }
     }
@@ -259,47 +212,11 @@ class WebRTCManager: NSObject, ObservableObject {
         
         do {
             let jsonData = try JSONSerialization.data(withJSONObject: sessionUpdate)
-            let buffer = RTCDataBuffer(data: jsonData, isBinary: false)
+            let buffer = RTCDataBuffer(data: jsonData, isBi nary: false)
             dc.sendData(buffer)
             print("session.update event sent.")
         } catch {
             print("Failed to serialize session.update JSON: \(error)")
-        }
-    }
-    
-    func sendAudioData(_ data: Data) {
-        guard connectionStatus == .connected,
-              let audioTrack = audioTrack else {
-            return
-        }
-        
-        // Convert the audio data to the format expected by WebRTC
-        // This implementation assumes data is already in the proper PCM format
-        // We could add more processing here if needed for specific format conversions
-        
-        // Create a buffer from the data
-        let buffer = RTCDataBuffer(data: data, isBinary: true)
-        
-        // Send the audio data over the data channel
-        // For binary audio data, we'll use a specific type identifier
-        if let dc = dataChannel, dc.readyState == .open {
-            do {
-                // Create an envelope for the audio data
-                let audioEvent: [String: Any] = [
-                    "type": "user_audio_data",
-                    "timestamp": Date().timeIntervalSince1970
-                ]
-                
-                // Serialize the event metadata
-                let jsonData = try JSONSerialization.data(withJSONObject: audioEvent)
-                let metadataBuffer = RTCDataBuffer(data: jsonData, isBinary: false)
-                
-                // First send metadata, then the binary audio
-                dc.sendData(metadataBuffer)
-                dc.sendData(buffer)
-            } catch {
-                print("Error sending audio data: \(error)")
-            }
         }
     }
     
@@ -784,6 +701,7 @@ extension WebRTCManager: RTCPeerConnectionDelegate {
             DispatchQueue.main.async { [weak self] in
                 self?.connectionStatus = .connected
             }
+
         case .completed:
             stateName = "completed"
             DispatchQueue.main.async { [weak self] in
