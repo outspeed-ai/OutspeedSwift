@@ -7,6 +7,7 @@ import SwiftUI
 /// Main class for OutspeedSwift package
 public class OutspeedSDK : ObservableObject {
     public static let version = "0.0.1"
+    public init() {}
 
     private enum Constants {
         static let defaultApiOrigin = "api.outspeed.com"
