@@ -30,10 +30,10 @@ public class OutspeedSDK {
         case en, ja, zh, de, hi, fr, ko, pt, it, es, id, nl, tr, pl, sv, bg, ro, ar, cs, el, fi, ms, da, ta, uk, ru, hu, no, vi
     }
 
-    public struct AgentPrompt: Codable, Sendable {
-        public var prompt: String?
+    struct AgentPrompt: Codable, Sendable {
+        var prompt: String?
 
-        public init(prompt: String? = nil) {
+        init(prompt: String? = nil) {
             self.prompt = prompt
         }
     }
@@ -50,20 +50,20 @@ public class OutspeedSDK {
         }
     }
 
-    public struct ConversationConfigOverride: Codable, Sendable {
-        public var agent: AgentConfig?
-        public var tts: TTSConfig?
+    struct ConversationConfigOverride: Codable, Sendable {
+        var agent: AgentConfig?
+        var tts: TTSConfig?
 
-        public init(agent: AgentConfig? = nil, tts: TTSConfig? = nil) {
+        init(agent: AgentConfig? = nil, tts: TTSConfig? = nil) {
             self.agent = agent
             self.tts = tts
         }
     }
 
-    public struct AgentConfig: Codable, Sendable {
-        public var prompt: AgentPrompt?
-        public var firstMessage: String?
-        public var language: Language?
+    struct AgentConfig: Codable, Sendable {
+        var prompt: AgentPrompt?
+        var firstMessage: String?
+        var language: Language?
 
         private enum CodingKeys: String, CodingKey {
             case prompt
@@ -116,14 +116,14 @@ public class OutspeedSDK {
         }
     }
 
-    public struct SessionConfig: Sendable {
-        public let signedUrl: String?
-        public let agentId: String?
-        public let overrides: ConversationConfigOverride?
-        public let customLlmExtraBody: [String: LlmExtraBodyValue]?
-        public let dynamicVariables: [String: DynamicVariableValue]?
+    struct SessionConfig: Sendable {
+        let signedUrl: String?
+        let agentId: String?
+        let overrides: ConversationConfigOverride?
+        let customLlmExtraBody: [String: LlmExtraBodyValue]?
+        let dynamicVariables: [String: DynamicVariableValue]?
 
-        public init(signedUrl: String, overrides: ConversationConfigOverride? = nil, customLlmExtraBody: [String: LlmExtraBodyValue]? = nil, dynamicVariables: [String: DynamicVariableValue]? = nil) {
+        init(signedUrl: String, overrides: ConversationConfigOverride? = nil, customLlmExtraBody: [String: LlmExtraBodyValue]? = nil, dynamicVariables: [String: DynamicVariableValue]? = nil) {
             self.signedUrl = signedUrl
             agentId = nil
             self.overrides = overrides
@@ -131,7 +131,7 @@ public class OutspeedSDK {
             self.dynamicVariables = dynamicVariables
         }
 
-        public init(agentId: String, overrides: ConversationConfigOverride? = nil, customLlmExtraBody: [String: LlmExtraBodyValue]? = nil, dynamicVariables: [String: DynamicVariableValue]? = nil) {
+        init(agentId: String, overrides: ConversationConfigOverride? = nil, customLlmExtraBody: [String: LlmExtraBodyValue]? = nil, dynamicVariables: [String: DynamicVariableValue]? = nil) {
             self.agentId = agentId
             signedUrl = nil
             self.overrides = overrides
@@ -140,10 +140,10 @@ public class OutspeedSDK {
         }
     }
 
-    public class Connection: @unchecked Sendable {
-        public let socket: URLSessionWebSocketTask
-        public let conversationId: String
-        public let sampleRate: Int
+    class Connection: @unchecked Sendable {
+        let socket: URLSessionWebSocketTask
+        let conversationId: String
+        let sampleRate: Int
 
         private init(socket: URLSessionWebSocketTask, conversationId: String, sampleRate: Int) {
             self.socket = socket
@@ -151,7 +151,7 @@ public class OutspeedSDK {
             self.sampleRate = sampleRate
         }
 
-        public static func create(config: SessionConfig) async throws -> Connection {
+        static func create(config: SessionConfig) async throws -> Connection {
             let origin = ProcessInfo.processInfo.environment["OUTSPEED_API_URL"] ?? Constants.defaultApiOrigin
 
             guard let agentId = config.agentId else {
@@ -317,7 +317,7 @@ public class OutspeedSDK {
         ///   - clientTools: Client tools callbacks (optional)
         ///   - apiKey: API key for the conversation
         /// - Returns: A started `Conversation` instance
-        public static func startSession(config: SessionConfig, callbacks: Callbacks = Callbacks(), apiKey: String) async throws -> Conversation {
+        static func startSession(config: SessionConfig, callbacks: Callbacks = Callbacks(), apiKey: String) async throws -> Conversation {
             // Step 2: Create the WebSocket connection
             let connection = WebRTCManager()
 
