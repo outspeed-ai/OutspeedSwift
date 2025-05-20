@@ -286,6 +286,13 @@ public class OutspeedSDK : ObservableObject {
 
             print("Using API key: \(apiKey ?? "Not provided")")
 
+            if callbacks.onModeChange != nil {
+                print("onModeChange is not supported by OutspeedSwift. Ignoring it.")
+            }
+            if callbacks.onVolumeUpdate != nil {
+                print("onVolumeUpdate is not supported by OutspeedSwift. Ignoring it.")
+            }
+
 
             try connection.startConnection(config: config, apiKey: apiKey ?? "", callbacks: callbacks, provider: provider)
 

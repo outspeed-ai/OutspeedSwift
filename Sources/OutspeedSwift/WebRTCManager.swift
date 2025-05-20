@@ -794,18 +794,23 @@ extension WebRTCManager: RTCPeerConnectionDelegate {
 
         case .completed:
             stateName = "completed"
-            localCallbacks.onStatusChange(.connected)
+            localCallbacks.onDisconnect()
+            localCallbacks.onStatusChange(.disconnected)
 
         case .failed:
             stateName = "failed"
+            localCallbacks.onDisconnect()
+            localCallbacks.onError("ICE Connection failed", nil)
             localCallbacks.onStatusChange(.disconnected)
 
         case .disconnected:
             stateName = "disconnected"
+            localCallbacks.onDisconnect()
             localCallbacks.onStatusChange(.disconnected)
 
         case .closed:
             stateName = "closed"
+            localCallbacks.onDisconnect()
             localCallbacks.onStatusChange(.disconnected)
         case .count:
             stateName = "count"
