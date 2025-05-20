@@ -228,6 +228,7 @@ class WebRTCManager: NSObject, ObservableObject {
     
     /// Called automatically when data channel opens, or you can manually call it.
     /// Updates session configuration with the latest instructions and voice.
+    @MainActor
     func sendSessionUpdate() {
         guard let dc = dataChannel, dc.readyState == .open else {
             print("Data channel is not open. Cannot send session.update.")
@@ -600,6 +601,7 @@ class WebRTCManager: NSObject, ObservableObject {
         }
     }
     
+    @MainActor
     private func handleIncomingJSON(_ jsonString: String) {
         print("Received JSON:\n\(jsonString)\n")
         
@@ -767,11 +769,14 @@ class WebRTCManager: NSObject, ObservableObject {
 
 // MARK: - RTCPeerConnectionDelegate
 extension WebRTCManager: RTCPeerConnectionDelegate {
+    @MainActor
     func peerConnection(_ peerConnection: RTCPeerConnection, didChange stateChanged: RTCSignalingState) {}
+    
     func peerConnection(_ peerConnection: RTCPeerConnection, didAdd stream: RTCMediaStream) {}
     func peerConnection(_ peerConnection: RTCPeerConnection, didRemove stream: RTCMediaStream) {}
     func peerConnectionShouldNegotiate(_ peerConnection: RTCPeerConnection) {}
     
+    @MainActor
     func peerConnection(_ peerConnection: RTCPeerConnection, didChange newState: RTCIceConnectionState) {
         let stateName: String
         // Create a local copy of callbacks to prevent data races
@@ -784,36 +789,24 @@ extension WebRTCManager: RTCPeerConnectionDelegate {
             stateName = "checking"
         case .connected:
             stateName = "connected"
-            DispatchQueue.main.async { [weak self] in
-//                self?.connectionStatus = .connected
-                localCallbacks.onConnect("")
-                localCallbacks.onStatusChange(.connected)
-            }
+            localCallbacks.onConnect("")
+            localCallbacks.onStatusChange(.connected)
 
         case .completed:
             stateName = "completed"
-            DispatchQueue.main.async { [weak self] in
-//                self?.connectionStatus = .connected
-                localCallbacks.onStatusChange(.connected)
-            }
+            localCallbacks.onStatusChange(.connected)
+
         case .failed:
             stateName = "failed"
-            DispatchQueue.main.async { [weak self] in
-//                self?.connectionStatus = .disconnected
-                localCallbacks.onStatusChange(.disconnected)
-            }
+            localCallbacks.onStatusChange(.disconnected)
+
         case .disconnected:
             stateName = "disconnected"
-            DispatchQueue.main.async { [weak self] in
-//                self?.connectionStatus = .disconnected
-                localCallbacks.onStatusChange(.disconnected)
-            }
+            localCallbacks.onStatusChange(.disconnected)
+
         case .closed:
             stateName = "closed"
-            DispatchQueue.main.async { [weak self] in
-//                self?.connectionStatus = .disconnected
-                localCallbacks.onStatusChange(.disconnected)
-            }
+            localCallbacks.onStatusChange(.disconnected)
         case .count:
             stateName = "count"
         @unknown default:
@@ -838,7 +831,7 @@ extension WebRTCManager: RTCDataChannelDelegate {
         print("Data channel state changed: \(dataChannel.readyState)")
         // Auto-send session.update after channel is open
         if dataChannel.readyState == .open {
-            DispatchQueue.main.async { [weak self] in
+            Task { @MainActor [weak self] in
                 self?.sendSessionUpdate()
             }
         }
@@ -849,8 +842,8 @@ extension WebRTCManager: RTCDataChannelDelegate {
         guard let message = String(data: buffer.data, encoding: .utf8) else {
             return
         }
-        DispatchQueue.main.async {
-            self.handleIncomingJSON(message)
+        Task { @MainActor [weak self] in
+            self?.handleIncomingJSON(message)
         }
     }
 }
