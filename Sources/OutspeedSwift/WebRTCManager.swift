@@ -1,4 +1,50 @@
 import WebRTC
+// Include necessary imports
+import Foundation
+import AVFoundation
+
+public enum Role: String {
+    case user
+    case ai
+}
+
+
+public enum Mode: String {
+    case speaking
+    case listening
+}
+
+public enum Status: String {
+    case connecting
+    case connected
+    case disconnecting
+    case disconnected
+}
+
+public struct Callbacks: Sendable {
+    public var onConnect: @Sendable (String) -> Void = { _ in }
+    public var onDisconnect: @Sendable () -> Void = {}
+    public var onMessage: @Sendable (String, Role) -> Void = { _, _ in }
+    public var onError: @Sendable (String, Any?) -> Void = { _, _ in }
+    public var onStatusChange: @Sendable (Status) -> Void = { _ in }
+    public var onModeChange: @Sendable (Mode) -> Void = { _ in }
+    public var onVolumeUpdate: @Sendable (Float) -> Void = { _ in }
+
+    public init() {}
+}
+
+// MARK: - Supporting Types
+enum ConnectionStatus: String {
+    case connecting
+    case connected
+    case disconnected
+}
+
+struct ConversationItem: Identifiable {
+    var id: String
+    var role: String
+    var text: String
+}
 
 // MARK: - WebRTCManager
 class WebRTCManager: NSObject, ObservableObject {
@@ -32,8 +78,9 @@ class WebRTCManager: NSObject, ObservableObject {
     
     // Flag to track if a layout update is in progress
     private var isUpdatingUI = false
-    private var callbacks: Callbacks
-
+    private var callbacks = Callbacks()
+    private var conversationId: String = ""
+    
     // MARK: - Public Properties
     // MARK: - Public Methods
     
@@ -41,13 +88,16 @@ class WebRTCManager: NSObject, ObservableObject {
     func startConnection(
         apiKey: String,
         callbacks: Callbacks,
-        modelName: String,
-        systemMessage: String,
-        voice: String,
+        modelName: String = "gpt-4o-mini-realtime-preview-2024-12-17",
+        systemMessage: String = "",
+        voice: String = "alloy",
         provider: Provider = .openai
     ) {
         conversation.removeAll()
         conversationMap.removeAll()
+        
+        // Store the callbacks
+        self.callbacks = callbacks
         
         // Store updated config
         self.modelName = modelName
