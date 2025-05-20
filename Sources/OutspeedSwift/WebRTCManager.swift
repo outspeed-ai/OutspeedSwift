@@ -85,7 +85,6 @@ public class WebRTCManager: NSObject, ObservableObject {
     
     // MARK: - Public Properties
     // MARK: - Public Methods
-    
     /// Start a WebRTC connection using a standard API key for local testing.
     public func startConnection(
         apiKey: String,
@@ -152,26 +151,28 @@ public class WebRTCManager: NSObject, ObservableObject {
                     let localCallbacks = self?.callbacks
                     do {
                         // Handle connection based on provider
-                        switch self?.provider {
-                        case .openai:
+//                        switch self?.provider {
+//                        case .openai:
+                            // first get the ephemeral Key
+                            let ephemeralKey = Utils.GetEphemeralKey(apiKey: apiKey, )
                             let answerSdp = try await self?.fetchRemoteSDPOpenAI(apiKey: apiKey, localSdp: localSdp)
                             if let answerSdp = answerSdp {
                                 await self?.setRemoteDescription(answerSdp)
                             } else {
                                 localCallbacks?.onError("Failed to get SDP answer from server", nil)
                             }
-                        case .outspeed:
-                            // First get ephemeral key
-                            let ephemeralKey = try await self?.getEphemeralKeyOutspeed(apiKey: apiKey)
-                            if let ephemeralKey = ephemeralKey {
-                                // Then establish WebRTC connection
-                                try await self?.fetchRemoteSDPOutspeed(ephemeralKey: ephemeralKey, localSdp: localSdp)
-                            } else {
-                                localCallbacks?.onError("Failed to get ephemeral key from server", nil)
-                            }
-                        case .none:
-                            localCallbacks?.onError("Provider not set", nil)
-                        }
+//                        case .outspeed:
+//                            // First get ephemeral key
+//                            let ephemeralKey = try await self?.getEphemeralKeyOutspeed(apiKey: apiKey)
+//                            if let ephemeralKey = ephemeralKey {
+//                                // Then establish WebRTC connection
+//                                try await self?.fetchRemoteSDPOutspeed(ephemeralKey: ephemeralKey, localSdp: localSdp)
+//                            } else {
+//                                localCallbacks?.onError("Failed to get ephemeral key from server", nil)
+//                            }
+//                        case .none:
+//                            localCallbacks?.onError("Provider not set", nil)
+//                        }
                     } catch {
                         // Use the local copy of callbacks here
                         localCallbacks?.onError("Error in connection process: \(error)", nil)
@@ -455,6 +456,11 @@ public class WebRTCManager: NSObject, ObservableObject {
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         print("[Outspeed] Sending SDP to OpenAI: \(localSdp)")
         request.httpBody = localSdp.data(using: .utf8)
+        
+        // Print request details
+        print("[Outspeed] Request URL: \(request.url?.absoluteString ?? "nil")")
+        print("[Outspeed] Request Headers: \(request.allHTTPHeaderFields ?? [:])")
+        print("[Outspeed] Request Body: \(String(data: request.httpBody ?? Data(), encoding: .utf8) ?? "nil")")
         
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse,

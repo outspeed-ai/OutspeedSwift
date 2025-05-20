@@ -17,6 +17,7 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/stasel/WebRTC.git", from: "130.0.0"),
         .package(url: "https://github.com/devicekit/DeviceKit.git", from: "5.0.0"),
+        .package(url: "https://github.com/SwiftyJSON/SwiftyJSON", from: "5.0.2"),
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
