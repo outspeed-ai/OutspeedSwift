@@ -54,6 +54,9 @@ public class WebRTCManager: NSObject, ObservableObject {
         provider: Provider = .openai
     ) {
 
+        self.connectionStatus = .connecting
+        self.callbacks.onStatusChange(.connecting)
+
         conversation.removeAll()
         conversationMap.removeAll()
         
@@ -67,7 +70,12 @@ public class WebRTCManager: NSObject, ObservableObject {
         setupLocalAudio()
         configureAudioSession()
         
-        guard let peerConnection = peerConnection else { return }
+        guard let peerConnection = peerConnection else { 
+            self.connectionStatus = .disconnected
+            self.callbacks.onStatusChange(.disconnected)
+            self.callbacks.onDisconnect()
+            return 
+        }
         
         // Create a Data Channel for sending/receiving events
         let config = RTCDataChannelConfiguration()
@@ -87,6 +95,9 @@ public class WebRTCManager: NSObject, ObservableObject {
                   error == nil else {
                 self?.callbacks.onError("Failed to create offer: \(String(describing: error))", nil)
                 print("Failed to create offer: \(String(describing: error))")
+                self?.connectionStatus = .disconnected
+                self?.callbacks.onStatusChange(.disconnected)
+                self?.callbacks.onDisconnect()
                 return
             }
             // Set local description
@@ -94,12 +105,18 @@ public class WebRTCManager: NSObject, ObservableObject {
                 guard let self = self, error == nil else {
                     self?.callbacks.onError("Failed to set local description: \(String(describing: error))", nil)
                     print("Failed to set local description: \(String(describing: error))")
+                    self?.connectionStatus = .disconnected
+                    self?.callbacks.onStatusChange(.disconnected)
+                    self?.callbacks.onDisconnect()
                     return
                 }
                 
                 // Capture only the SDP string (a Sendable value) to avoid capturing the non-Sendable peerConnection reference.
                 guard let localSdp = peerConnection.localDescription?.sdp else {
                     self.callbacks.onError("Failed to obtain local SDP", nil)
+                    self.connectionStatus = .disconnected
+                    self.callbacks.onStatusChange(.disconnected)
+                    self.callbacks.onDisconnect()
                     return
                 }
                 
@@ -134,6 +151,7 @@ public class WebRTCManager: NSObject, ObservableObject {
                         print("Error in connection process: \(error)")
                         self?.connectionStatus = .disconnected
                         localCallbacks?.onStatusChange(.disconnected)
+                        localCallbacks?.onDisconnect()
                     }
                 }
             }
