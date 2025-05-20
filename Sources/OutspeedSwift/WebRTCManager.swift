@@ -234,7 +234,7 @@ class WebRTCManager: NSObject, ObservableObject {
         
         do {
             let jsonData = try JSONSerialization.data(withJSONObject: sessionUpdate)
-            let buffer = RTCDataBuffer(data: jsonData, isBi nary: false)
+            let buffer = RTCDataBuffer(data: jsonData, isBinary: false)
             dc.sendData(buffer)
             print("session.update event sent.")
         } catch {
