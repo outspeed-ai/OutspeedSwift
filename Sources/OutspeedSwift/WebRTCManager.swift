@@ -2,6 +2,7 @@ import WebRTC
 // Include necessary imports
 import Foundation
 import AVFoundation
+import SwiftUI
 
 public enum Role: String {
     case user
@@ -33,23 +34,24 @@ public struct Callbacks: Sendable {
     public init() {}
 }
 
-// MARK: - Supporting Types
-enum ConnectionStatus: String {
-    case connecting
-    case connected
-    case disconnected
-}
-
 struct ConversationItem: Identifiable {
-    var id: String
-    var role: String
-    var text: String
+    let id: String       // item_id from the JSON
+    let role: String     // "user" / "assistant"
+    var text: String     // transcript
+    
+    var roleSymbol: String {
+        role.lowercased() == "user" ? "person.fill" : "sparkles"
+    }
+    
+    var roleColor: Color {
+        role.lowercased() == "user" ? .blue : .purple
+    }
 }
 
 // MARK: - WebRTCManager
 class WebRTCManager: NSObject, ObservableObject {
     // UI State
-    @Published var connectionStatus: ConnectionStatus = .disconnected
+    @Published var connectionStatus: Status = .disconnected
     @Published var eventTypeStr: String = ""
     
     // Basic conversation text
