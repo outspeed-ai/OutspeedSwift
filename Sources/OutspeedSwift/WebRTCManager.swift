@@ -127,14 +127,14 @@ class WebRTCManager: NSObject, ObservableObject {
             guard let self = self,
                   let sdp = sdp,
                   error == nil else {
-                self.callbacks?.onError("Failed to create offer: \(String(describing: error))", nil)
+                self.callbacks.onError("Failed to create offer: \(String(describing: error))", nil)
                 print("Failed to create offer: \(String(describing: error))")
                 return
             }
             // Set local description
             peerConnection.setLocalDescription(sdp) { [weak self] error in
                 guard let self = self, error == nil else {
-                    self.callbacks?.onError("Failed to set local description: \(String(describing: error))", nil)
+                    self.callbacks.onError("Failed to set local description: \(String(describing: error))", nil)
                     print("Failed to set local description: \(String(describing: error))")
                     return
                 }
@@ -156,10 +156,10 @@ class WebRTCManager: NSObject, ObservableObject {
                             try await self.fetchRemoteSDPOutspeed(ephemeralKey: ephemeralKey, localSdp: localSdp)
                         }
                     } catch {
-                        self.callbacks?.onError("Error in connection process: \(error)", nil)
+                        self.callbacks.onError("Error in connection process: \(error)", nil)
                         print("Error in connection process: \(error)")
                         self.connectionStatus = .disconnected
-                        self.callbacks?.onStatusChange(.disconnected)
+                        self.callbacks.onStatusChange(.disconnected)
                     }
                 }
             }
@@ -272,7 +272,7 @@ class WebRTCManager: NSObject, ObservableObject {
             print("session.update event sent.")
         } catch {
             print("Failed to serialize session.update JSON: \(error)")
-            self.callbacks?.onError("Failed to serialize session.update JSON: \(error)", nil)
+            self.callbacks.onError("Failed to serialize session.update JSON: \(error)", nil)
         }
     }
     
@@ -298,7 +298,7 @@ class WebRTCManager: NSObject, ObservableObject {
             try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
         } catch {
             print("Failed to configure AVAudioSession: \(error)")
-            self.callbacks?.onError("Failed to configure AVAudioSession: \(error)", nil)
+            self.callbacks.onError("Failed to configure AVAudioSession: \(error)", nil)
         }
     }
     
@@ -659,7 +659,7 @@ class WebRTCManager: NSObject, ObservableObject {
                         conversation = updatedConversation
                     }
                 }
-                self.callbacks?.onMessage(transcript, .ai)
+                self.callbacks.onMessage(transcript, .ai)
             }
             
         case "conversation.item.input_audio_transcription.completed":
@@ -678,7 +678,7 @@ class WebRTCManager: NSObject, ObservableObject {
                         conversation = updatedConversation
                     }
                 }
-                self.callbacks?.onMessage(transcript, .user)
+                self.callbacks.onMessage(transcript, .user)
             }
             
         default:
