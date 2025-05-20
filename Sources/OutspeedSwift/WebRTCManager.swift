@@ -26,17 +26,7 @@ public enum Status: String {
     case disconnected
 }
 
-public struct Callbacks: Sendable {
-    public var onConnect: @Sendable (String) -> Void = { _ in }
-    public var onDisconnect: @Sendable () -> Void = {}
-    public var onMessage: @Sendable (String, Role) -> Void = { _, _ in }
-    public var onError: @Sendable (String, Any?) -> Void = { _, _ in }
-    public var onStatusChange: @Sendable (Status) -> Void = { _ in }
-    public var onModeChange: @Sendable (Mode) -> Void = { _ in }
-    public var onVolumeUpdate: @Sendable (Float) -> Void = { _ in }
 
-    public init() {}
-}
 
 public struct ConversationItem: Identifiable {
     public let id: String       // item_id from the JSON
@@ -84,7 +74,7 @@ public class WebRTCManager: NSObject, ObservableObject {
     
     // Flag to track if a layout update is in progress
     private var isUpdatingUI = false
-    private var callbacks = Callbacks()
+    private var callbacks = OutspeedSDK.Callbacks()
     public var conversationId: String = ""
     
     // MARK: - Public Properties
@@ -94,7 +84,7 @@ public class WebRTCManager: NSObject, ObservableObject {
     public func startConnection(
         config: OutspeedSDK.SessionConfig,
         apiKey: String,
-        callbacks: Callbacks,
+        callbacks: OutspeedSDK.Callbacks,
         provider: Provider = .openai
     ) {
 
@@ -508,7 +498,6 @@ public class WebRTCManager: NSObject, ObservableObject {
                     case .success(let message):
                         switch message {
                         case .string(let text):
-                            print("[Outspeed][WebSocket] Received string: \(text)")
                             guard let data = text.data(using: .utf8),
                                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                                   let type = json["type"] as? String else {
@@ -720,13 +709,10 @@ public class WebRTCManager: NSObject, ObservableObject {
     
 
     public func peerConnection(_ peerConnection: RTCPeerConnection, didGenerate candidate: RTCIceCandidate) {
-        logger.debug("[Outspeed] didGenerate candidate: \(candidate.sdp)")
         if provider == .outspeed {
             if let webSocket = outspeedWebSocket, webSocket.state == .running {
                 sendIceCandidate(candidate)
             } else {
-                // Buffer the candidate for later
-                logger.debug("[Outspeed] WebSocket not ready, buffering ICE candidate")
                 pendingIceCandidates.append(candidate)
             }
         }
@@ -757,7 +743,6 @@ public class WebRTCManager: NSObject, ObservableObject {
             return
         }
         
-        logger.debug("[Outspeed] Sending ICE candidate: \(candidateString)")
         webSocket.send(.string(candidateString)) { error in
             if let error {
                 localCallbacks.onError("Failed to send ICE candidate: \(error)", nil)

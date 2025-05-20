@@ -20,6 +20,19 @@ public class OutspeedSDK : ObservableObject {
         #endif
     }
 
+
+    public struct Callbacks: Sendable {
+    public var onConnect: @Sendable (String) -> Void = { _ in }
+    public var onDisconnect: @Sendable () -> Void = {}
+    public var onMessage: @Sendable (String, Role) -> Void = { _, _ in }
+    public var onError: @Sendable (String, Any?) -> Void = { _, _ in }
+    public var onStatusChange: @Sendable (Status) -> Void = { _ in }
+    public var onModeChange: @Sendable (Mode) -> Void = { _ in }
+    public var onVolumeUpdate: @Sendable (Float) -> Void = { _ in }
+
+    public init() {}
+}
+
     private enum Constants {
         static let inputSampleRate: Double = 16000
         static let sampleRate: Double = 16000
