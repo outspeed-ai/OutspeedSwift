@@ -19,12 +19,6 @@ public enum Mode: String {
     case listening
 }
 
-public enum Status: String {
-    case connecting
-    case connected
-    case disconnecting
-    case disconnected
-}
 
 
 
@@ -45,7 +39,7 @@ public struct ConversationItem: Identifiable {
 // MARK: - WebRTCManager
 public class WebRTCManager: NSObject, ObservableObject {
     // UI State
-    @Published public var connectionStatus: Status = .disconnected
+    @Published public var connectionStatus: OutspeedSDK.Status = .disconnected
     @Published public var eventTypeStr: String = ""
     
     // Basic conversation text
@@ -764,7 +758,7 @@ public class WebRTCManager: NSObject, ObservableObject {
         pendingIceCandidates.removeAll()
     }
 
-    func getConnectionStatus() -> Status {
+    func getConnectionStatus() -> OutspeedSDK.Status {
         return connectionStatus
     }
 }
@@ -787,6 +781,7 @@ extension WebRTCManager: RTCPeerConnectionDelegate {
             stateName = "new"
         case .checking:
             stateName = "checking"
+            localCallbacks.onStatusChange(.connecting)
         case .connected:
             stateName = "connected"
             localCallbacks.onConnect("")
@@ -794,8 +789,7 @@ extension WebRTCManager: RTCPeerConnectionDelegate {
 
         case .completed:
             stateName = "completed"
-            localCallbacks.onDisconnect()
-            localCallbacks.onStatusChange(.disconnected)
+            localCallbacks.onStatusChange(.connected)
 
         case .failed:
             stateName = "failed"

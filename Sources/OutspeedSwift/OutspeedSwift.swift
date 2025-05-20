@@ -20,6 +20,13 @@ public class OutspeedSDK : ObservableObject {
         #endif
     }
 
+    public enum Status: String {
+        case connecting
+        case connected
+        case disconnecting
+        case disconnected
+    }
+
 
     public struct Callbacks: Sendable {
     public var onConnect: @Sendable (String) -> Void = { _ in }
