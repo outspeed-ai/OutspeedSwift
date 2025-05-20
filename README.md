@@ -133,3 +133,7 @@ let conversation = try await OutspeedSDK.Conversation.startSession(
     apiKey: "<YOUR_OUTSPEED_API_KEY>"
 )
 ```
+
+## Examples
+
+You can find examples of the SDK here: https://github.com/outspeed-ai/outspeed-swift-examples
