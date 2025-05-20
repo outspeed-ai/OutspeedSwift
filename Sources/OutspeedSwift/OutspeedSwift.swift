@@ -162,7 +162,9 @@ public class OutspeedSDK {
             
             // Create peer connection
             let constraints = RTCMediaConstraints(mandatoryConstraints: nil, optionalConstraints: nil)
-            let peerConnection = factory.peerConnection(with: rtcConfig, constraints: constraints, delegate: nil)
+            guard let peerConnection = factory.peerConnection(with: rtcConfig, constraints: constraints, delegate: nil) else {
+                throw OutspeedError.failedToCreateDataChannel
+            }
             
             // Create data channel
             let dataChannelConfig = RTCDataChannelConfiguration()
@@ -756,13 +758,5 @@ extension NSLock {
         lock()
         defer { unlock() }
         return try body()
-    }
-}
-
-// Required extension for WebRTCManager to support sending audio data
-extension WebRTCManager {
-    func sendAudioData(_ data: Data) {
-        // Implementation would need to be added to WebRTCManager.swift
-        // This method would process the audio data and send it through the WebRTC connection
     }
 }

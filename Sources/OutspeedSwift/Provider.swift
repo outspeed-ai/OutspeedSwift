@@ -1,6 +1,6 @@
 import Foundation
 
-public enum Provider: String {
+public enum Provider: String, Sendable {
     case openai
     case outspeed
     
