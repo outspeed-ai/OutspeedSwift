@@ -10,7 +10,7 @@ import UIKit
 
 /// Main class for OutspeedSwift package
 public class OutspeedSDK : ObservableObject {
-    public static let version = "0.0.1"
+    public static let version: String = "0.0.1"
     public init() {
         #if os(iOS)
         // Prevent usage on iOS versions newer than 18.3.1
@@ -21,8 +21,6 @@ public class OutspeedSDK : ObservableObject {
     }
 
     private enum Constants {
-        static let defaultApiOrigin = "api.outspeed.com"
-        static let defaultApiPathname = "/v1/convai/conversation?agent_id="
         static let inputSampleRate: Double = 16000
         static let sampleRate: Double = 16000
         static let ioBufferDuration: Double = 0.005
@@ -128,7 +126,7 @@ public class OutspeedSDK : ObservableObject {
         }
     }
 
-    struct SessionConfig: Sendable {
+    public struct SessionConfig: Sendable {
         let signedUrl: String?
         let agentId: String?
         let overrides: ConversationConfigOverride?
@@ -136,6 +134,7 @@ public class OutspeedSDK : ObservableObject {
         let dynamicVariables: [String: DynamicVariableValue]?
 
         init(signedUrl: String, overrides: ConversationConfigOverride? = nil, customLlmExtraBody: [String: LlmExtraBodyValue]? = nil, dynamicVariables: [String: DynamicVariableValue]? = nil) {
+            print("signedUrl, overrides, customLlmExtraBody, and dynamicVariables are not yet supported by OutspeedSwift. Ignoring them.")
             self.signedUrl = signedUrl
             agentId = nil
             self.overrides = overrides
@@ -144,6 +143,7 @@ public class OutspeedSDK : ObservableObject {
         }
 
         init(agentId: String, overrides: ConversationConfigOverride? = nil, customLlmExtraBody: [String: LlmExtraBodyValue]? = nil, dynamicVariables: [String: DynamicVariableValue]? = nil) {
+            print("agentId, overrides, customLlmExtraBody, and dynamicVariables are not yet supported by OutspeedSwift. Ignoring them.")
             self.agentId = agentId
             signedUrl = nil
             self.overrides = overrides
@@ -162,49 +162,6 @@ public class OutspeedSDK : ObservableObject {
             self.socket = socket
             self.conversationId = conversationId
             self.sampleRate = sampleRate
-        }
-
-        static func create(config: SessionConfig) async throws -> Connection {
-            let origin = ProcessInfo.processInfo.environment["OUTSPEED_API_URL"] ?? Constants.defaultApiOrigin
-
-            guard let agentId = config.agentId else {
-                throw OutspeedError.invalidConfiguration
-            }
-            
-            guard let url = URL(string: origin + Constants.defaultApiPathname + agentId) else {
-                throw OutspeedError.invalidURL
-            }
-
-            let session = URLSession(configuration: .default)
-            let socket = session.webSocketTask(with: url)
-            socket.resume()
-
-            // Always send initialization event
-            var initEvent: [String: Any] = ["type": "conversation_initiation_client_data"]
-
-            // Add overrides if present
-            if let overrides: OutspeedSDK.ConversationConfigOverride = config.overrides,
-               let overridesDict = overrides.dictionary
-            {
-                initEvent["conversation_config_override"] = overridesDict
-            }
-
-            // Add custom body if present
-            if let customBody = config.customLlmExtraBody {
-                initEvent["custom_llm_extra_body"] = customBody.mapValues { $0.jsonValue }
-            }
-
-            // Add dynamic variables if present - Convert to JSON-compatible values
-            if let dynamicVars = config.dynamicVariables {
-                initEvent["dynamic_variables"] = dynamicVars.mapValues { $0.jsonValue }
-            }
-
-            let jsonData = try JSONSerialization.data(withJSONObject: initEvent)
-            let jsonString = String(data: jsonData, encoding: .utf8)!
-            try await socket.send(.string(jsonString))
-
-            let configData = try await receiveInitialMessage(socket: socket)
-            return Connection(socket: socket, conversationId: configData.conversationId, sampleRate: configData.sampleRate)
         }
 
         private static func receiveInitialMessage(
@@ -288,7 +245,7 @@ public class OutspeedSDK : ObservableObject {
         ///   - clientTools: Client tools callbacks (optional)
         ///   - apiKey: API key for the conversation
         /// - Returns: A started `Conversation` instance
-        public static func startSession(callbacks: Callbacks = Callbacks(), apiKey: String, provider: Provider = .openai) async throws -> Conversation {
+        public static func startSession(config: SessionConfig, callbacks: Callbacks = Callbacks(), apiKey: String?, provider: Provider = .openai) async throws -> Conversation {
             // Step 2: Create the WebSocket connection
             #if os(iOS)
             // Prevent usage on iOS versions newer than 18.3.1
@@ -301,36 +258,13 @@ public class OutspeedSDK : ObservableObject {
 
             let connection = WebRTCManager()
 
-            try connection.startConnection(apiKey: apiKey, callbacks: callbacks, provider: provider)
+            try connection.startConnection(config: config, apiKey: apiKey, callbacks: callbacks, provider: provider)
 
             // Step 5: Initialize the Conversation
             let conversation = Conversation(connection: connection, callbacks: callbacks)
 
             return conversation
         }
-
-
-
-        private func updateVolume(_ buffer: AVAudioPCMBuffer) {
-            guard let channelData = buffer.floatChannelData else { return }
-
-            var sum: Float = 0
-            let channelCount = Int(buffer.format.channelCount)
-
-            for channel in 0 ..< channelCount {
-                let data = channelData[channel]
-                for i in 0 ..< Int(buffer.frameLength) {
-                    sum += abs(data[i])
-                }
-            }
-
-            let average = sum / Float(buffer.frameLength * buffer.format.channelCount)
-            let meterLevel = 20 * log10(average)
-
-            // Normalize the meter level to a 0-1 range
-            currentInputVolume = max(0, min(1, (meterLevel + 50) / 50))
-        }
-
 
         // TODO: Implement this
         // private func sendWebSocketMessage(_ message: [String: Any]) {

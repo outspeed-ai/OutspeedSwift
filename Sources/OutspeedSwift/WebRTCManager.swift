@@ -88,13 +88,24 @@ public class WebRTCManager: NSObject, ObservableObject {
     
     /// Start a WebRTC connection using a standard API key for local testing.
     public func startConnection(
-        apiKey: String,
+        config: OutspeedSDK.SessionConfig,
+        apiKey: String?,
         callbacks: Callbacks,
-        modelName: String = "gpt-4o-mini-realtime-preview-2024-12-17",
-        systemMessage: String = "",
-        voice: String = "alloy",
         provider: Provider = .openai
     ) {
+        if provider == .outspeed {
+            guard let apiKey = apiKey ?? ProcessInfo.processInfo.environment["OUTSPEED_API_KEY"] else {
+                callbacks.onError("No API key provided. Please set OUTSPEED_API_KEY in your environment variables or pass an apiKey parameter.", nil)
+                return
+            }
+        }
+        if provider == .openai {
+            guard let apiKey = apiKey ?? ProcessInfo.processInfo.environment["OPENAI_API_KEY"] else {
+                callbacks.onError("No API key provided. Please set OPENAI_API_KEY in your environment variables or pass an apiKey parameter.", nil)
+                return
+            }
+        }
+
         conversation.removeAll()
         conversationMap.removeAll()
         
@@ -102,9 +113,6 @@ public class WebRTCManager: NSObject, ObservableObject {
         self.callbacks = callbacks
         
         // Store updated config
-        self.modelName = modelName
-        self.systemInstructions = systemMessage
-        self.voice = voice
         self.provider = provider
         
         setupPeerConnection()
@@ -368,8 +376,9 @@ public class WebRTCManager: NSObject, ObservableObject {
     }
     
     /// Get ephemeral key from Outspeed server
-    private func getEphemeralKeyOutspeed(apiKey: String) async throws -> String {
-        let baseUrl = "https://\(provider.baseURL)/v1/realtime/sessions"
+    private func getEphemeralKeyOutspeed(apiKey: String?) async throws -> String {
+        let outspeed_url = ProcessInfo.processInfo.environment["OUTSPEED_API_URL"] ?? provider.baseURL
+        let baseUrl = "https://\(outspeed_url)/v1/realtime/sessions"
         guard let url = URL(string: baseUrl) else {
             throw URLError(.badURL)
         }
@@ -443,7 +452,7 @@ public class WebRTCManager: NSObject, ObservableObject {
     }
     
     /// Handle OpenAI SDP exchange
-    private func fetchRemoteSDPOpenAI(apiKey: String, localSdp: String) async throws -> String {
+    private func fetchRemoteSDPOpenAI(apiKey: String?, localSdp: String) async throws -> String {
         let baseUrl = "https://\(provider.baseURL)/v1/realtime"
         guard let url = URL(string: "\(baseUrl)?model=\(modelName)") else {
             throw URLError(.badURL)
