@@ -201,7 +201,7 @@ public class WebRTCManager: NSObject, ObservableObject {
     }
     
     /// Sends a custom "conversation.item.create" event
-    func sendMessage() {
+    public func sendMessage() {
         guard let dc = dataChannel,
               !outgoingMessage.trimmingCharacters(in: .whitespaces).isEmpty else {
             return
