@@ -93,24 +93,10 @@ public class WebRTCManager: NSObject, ObservableObject {
     /// Start a WebRTC connection using a standard API key for local testing.
     public func startConnection(
         config: OutspeedSDK.SessionConfig,
-        apiKey: String?,
+        apiKey: String,
         callbacks: Callbacks,
         provider: Provider = .openai
     ) {
-        if provider == .outspeed {
-            guard let apiKey = apiKey ?? ProcessInfo.processInfo.environment["OUTSPEED_API_KEY"] else {
-                callbacks.onError("No API key provided. Please set OUTSPEED_API_KEY in your environment variables or pass an apiKey parameter.", nil)
-                return
-            }
-        }
-        if provider == .openai {
-            guard let apiKey = apiKey ?? ProcessInfo.processInfo.environment["OPENAI_API_KEY"] else {
-                callbacks.onError("No API key provided. Please set OPENAI_API_KEY in your environment variables or pass an apiKey parameter.", nil)
-                return
-            }
-        }
-
-        print("Using API key: \(apiKey ?? "Not provided")")
 
         conversation.removeAll()
         conversationMap.removeAll()
@@ -382,7 +368,7 @@ public class WebRTCManager: NSObject, ObservableObject {
     }
     
     /// Get ephemeral key from Outspeed server
-    private func getEphemeralKeyOutspeed(apiKey: String?) async throws -> String {
+    private func getEphemeralKeyOutspeed(apiKey: String) async throws -> String {
         let outspeed_url = ProcessInfo.processInfo.environment["OUTSPEED_API_URL"] ?? provider.baseURL
         let baseUrl = "https://\(outspeed_url)/v1/realtime/sessions"
         guard let url = URL(string: baseUrl) else {
