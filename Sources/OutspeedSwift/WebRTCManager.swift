@@ -260,7 +260,7 @@ public class WebRTCManager: NSObject, ObservableObject {
                 "session": [
                     "modalities": ["text", "audio"],  // Enable both text and audio
                     "instructions": systemInstructions,
-                    "voice": voice,
+                    "voice": "tara",
                     "input_audio_transcription": [
                         "model": provider == .openai ? "whisper-1" : "whisper-v3-turbo"
                     ],
@@ -383,10 +383,10 @@ public class WebRTCManager: NSObject, ObservableObject {
         if provider == .outspeed {
             // Create session configuration
             sessionConfig = [
-                "model": modelName,
+                "model": "Orpheus-3b",
                 "modalities": ["text", "audio"],
                 "instructions": systemInstructions,
-                "voice": voice,
+                "voice": "tara",
                 "input_audio_format": "pcm16",
                 "output_audio_format": "pcm16",
                 "input_audio_transcription": [
@@ -478,7 +478,7 @@ public class WebRTCManager: NSObject, ObservableObject {
     
     /// Handle Outspeed WebSocket-based SDP exchange
     private func fetchRemoteSDPOutspeed(ephemeralKey: String, localSdp: String) async throws {
-        let wsUrl = "wss://\(provider.baseURL)/v1/realtime/ws?client_secret=\(ephemeralKey)&model=\(modelName)"
+        let wsUrl = "wss://\(provider.baseURL)/v1/realtime/ws?client_secret=\(ephemeralKey)"
         guard let url = URL(string: wsUrl) else {
             throw URLError(.badURL)
         }
