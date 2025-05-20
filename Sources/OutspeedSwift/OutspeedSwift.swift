@@ -154,7 +154,11 @@ public class OutspeedSDK {
         public static func create(config: SessionConfig) async throws -> Connection {
             let origin = ProcessInfo.processInfo.environment["OUTSPEED_API_URL"] ?? Constants.defaultApiOrigin
 
-            guard let url = URL(string: origin + Constants.defaultApiPathname + config.agentId) else {
+            guard let agentId = config.agentId else {
+                throw OutspeedError.invalidConfiguration
+            }
+            
+            guard let url = URL(string: origin + Constants.defaultApiPathname + agentId) else {
                 throw OutspeedError.invalidURL
             }
 

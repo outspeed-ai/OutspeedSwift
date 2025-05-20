@@ -178,7 +178,7 @@ class WebRTCManager: NSObject, ObservableObject {
         
         DispatchQueue.main.async { [weak self] in
             self?.connectionStatus = .disconnected
-            self?.callbacks?.onStatusChange(.disconnected)
+            self?.callbacks.onStatusChange(.disconnected)
         }
     }
     
@@ -267,7 +267,7 @@ class WebRTCManager: NSObject, ObservableObject {
         
         do {
             let jsonData = try JSONSerialization.data(withJSONObject: sessionUpdate)
-            let buffer = RTCDataBuffer(data: jsonData, isBi nary: false)
+            let buffer = RTCDataBuffer(data: jsonData, isBinary: false)
             dc.sendData(buffer)
             print("session.update event sent.")
         } catch {
@@ -330,11 +330,11 @@ class WebRTCManager: NSObject, ObservableObject {
                 if let error {
                     print("Failed to set remote description: \(error)")
                     self?.connectionStatus = .disconnected
-                    self?.callbacks?.onStatusChange(.disconnected)
-                    self?.callbacks?.onError("Failed to set remote description: \(error)", nil)
+                    self?.callbacks.onStatusChange(.disconnected)
+                    self?.callbacks.onError("Failed to set remote description: \(error)", nil)
                 } else {
                     self?.connectionStatus = .connected
-                    self?.callbacks?.onStatusChange(.connected)
+                    self?.callbacks.onStatusChange(.connected)
                 }
             }
         }
@@ -725,7 +725,7 @@ class WebRTCManager: NSObject, ObservableObject {
         print("[Outspeed] Sending ICE candidate: \(candidateString)")
         webSocket.send(.string(candidateString)) { error in
             if let error {
-                self.callbacks?.onError("Failed to send ICE candidate: \(error)", nil)
+                self.callbacks.onError("Failed to send ICE candidate: \(error)", nil)
                 print("[Outspeed] Failed to send ICE candidate: \(error)")
             }
         }
@@ -764,33 +764,33 @@ extension WebRTCManager: RTCPeerConnectionDelegate {
             stateName = "connected"
             DispatchQueue.main.async { [weak self] in
                 self?.connectionStatus = .connected
-                self?.callbacks?.onConnect(self?.conversationId ?? "")
-                self?.callbacks?.onStatusChange(.connected)
+                self?.callbacks.onConnect(self?.conversationId ?? "")
+                self?.callbacks.onStatusChange(.connected)
             }
 
         case .completed:
             stateName = "completed"
             DispatchQueue.main.async { [weak self] in
                 self?.connectionStatus = .connected
-                self?.callbacks?.onStatusChange(.connected)
+                self?.callbacks.onStatusChange(.connected)
             }
         case .failed:
             stateName = "failed"
             DispatchQueue.main.async { [weak self] in
                 self?.connectionStatus = .disconnected
-                self?.callbacks?.onStatusChange(.disconnected)
+                self?.callbacks.onStatusChange(.disconnected)
             }
         case .disconnected:
             stateName = "disconnected"
             DispatchQueue.main.async { [weak self] in
                 self?.connectionStatus = .disconnected
-                self?.callbacks?.onStatusChange(.disconnected)
+                self?.callbacks.onStatusChange(.disconnected)
             }
         case .closed:
             stateName = "closed"
             DispatchQueue.main.async { [weak self] in
                 self?.connectionStatus = .disconnected
-                self?.callbacks?.onStatusChange(.disconnected)
+                self?.callbacks.onStatusChange(.disconnected)
             }
         case .count:
             stateName = "count"
