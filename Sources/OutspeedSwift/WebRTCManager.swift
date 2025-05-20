@@ -166,6 +166,8 @@ class WebRTCManager: NSObject, ObservableObject {
                             } else {
                                 localCallbacks?.onError("Failed to get ephemeral key from server", nil)
                             }
+                        case .none:
+                            localCallbacks?.onError("Provider not set", nil)
                         }
                     } catch {
                         // Use the local copy of callbacks here
@@ -853,3 +855,6 @@ extension WebRTCManager: RTCDataChannelDelegate {
         }
     }
 }
+
+// Provide Sendable conformance explicitly. WebRTCManager manages its own thread safety by confining mutable state to the main thread or through synchronization where needed.
+extension WebRTCManager: @unchecked Sendable {}
