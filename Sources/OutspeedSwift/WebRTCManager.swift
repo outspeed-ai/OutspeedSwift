@@ -87,7 +87,7 @@ public class WebRTCManager: NSObject, ObservableObject {
     // MARK: - Public Methods
     
     /// Start a WebRTC connection using a standard API key for local testing.
-    func startConnection(
+    public func startConnection(
         apiKey: String,
         callbacks: Callbacks,
         modelName: String = "gpt-4o-mini-realtime-preview-2024-12-17",

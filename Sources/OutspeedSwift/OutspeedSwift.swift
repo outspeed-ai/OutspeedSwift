@@ -318,11 +318,11 @@ public class OutspeedSDK : ObservableObject {
         ///   - clientTools: Client tools callbacks (optional)
         ///   - apiKey: API key for the conversation
         /// - Returns: A started `Conversation` instance
-        public static func startSession(callbacks: Callbacks = Callbacks(), apiKey: String) async throws -> Conversation {
+        public static func startSession(callbacks: Callbacks = Callbacks(), apiKey: String, provider: Provider = .openai) async throws -> Conversation {
             // Step 2: Create the WebSocket connection
             let connection = WebRTCManager()
 
-            try connection.startConnection(apiKey: apiKey, callbacks: callbacks)
+            try connection.startConnection(apiKey: apiKey, callbacks: callbacks, provider: provider)
 
             // Step 5: Initialize the Conversation
             let conversation = Conversation(connection: connection, callbacks: callbacks)
