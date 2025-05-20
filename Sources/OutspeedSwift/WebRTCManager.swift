@@ -140,6 +140,8 @@ class WebRTCManager: NSObject, ObservableObject {
                 }
                 
                 Task {
+                    // Create an immutable local copy of callbacks to prevent data races
+                    let localCallbacks = self.callbacks
                     do {
                         guard let localSdp = peerConnection.localDescription?.sdp else {
                             return
@@ -156,10 +158,11 @@ class WebRTCManager: NSObject, ObservableObject {
                             try await self.fetchRemoteSDPOutspeed(ephemeralKey: ephemeralKey, localSdp: localSdp)
                         }
                     } catch {
-                        self.callbacks.onError("Error in connection process: \(error)", nil)
+                        // Use the local copy of callbacks here
+                        localCallbacks.onError("Error in connection process: \(error)", nil)
                         print("Error in connection process: \(error)")
                         self.connectionStatus = .disconnected
-                        self.callbacks.onStatusChange(.disconnected)
+                        localCallbacks.onStatusChange(.disconnected)
                     }
                 }
             }
@@ -229,6 +232,9 @@ class WebRTCManager: NSObject, ObservableObject {
             return
         }
         
+        // Create a local copy of callbacks to prevent data races
+        let localCallbacks = self.callbacks
+        
         // Declare sessionUpdate outside of conditional blocks
         let sessionUpdate: [String: Any]
         
@@ -272,7 +278,7 @@ class WebRTCManager: NSObject, ObservableObject {
             print("session.update event sent.")
         } catch {
             print("Failed to serialize session.update JSON: \(error)")
-            self.callbacks.onError("Failed to serialize session.update JSON: \(error)", nil)
+            localCallbacks.onError("Failed to serialize session.update JSON: \(error)", nil)
         }
     }
     
@@ -291,6 +297,9 @@ class WebRTCManager: NSObject, ObservableObject {
     }
     
     private func configureAudioSession() {
+        // Create a local copy of callbacks to prevent data races
+        let localCallbacks = self.callbacks
+        
         do {
             let audioSession = AVAudioSession.sharedInstance()
             try audioSession.setCategory(.playAndRecord, options: [.defaultToSpeaker, .allowBluetooth])
@@ -298,7 +307,7 @@ class WebRTCManager: NSObject, ObservableObject {
             try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
         } catch {
             print("Failed to configure AVAudioSession: \(error)")
-            self.callbacks.onError("Failed to configure AVAudioSession: \(error)", nil)
+            localCallbacks.onError("Failed to configure AVAudioSession: \(error)", nil)
         }
     }
     
@@ -325,16 +334,18 @@ class WebRTCManager: NSObject, ObservableObject {
     
     private func setRemoteDescription(_ sdp: String) async {
         let answer = RTCSessionDescription(type: .answer, sdp: sdp)
+        // Create a local copy of callbacks
+        let localCallbacks = self.callbacks
         peerConnection?.setRemoteDescription(answer) { [weak self] error in
             DispatchQueue.main.async {
                 if let error {
                     print("Failed to set remote description: \(error)")
                     self?.connectionStatus = .disconnected
-                    self?.callbacks.onStatusChange(.disconnected)
-                    self?.callbacks.onError("Failed to set remote description: \(error)", nil)
+                    localCallbacks.onStatusChange(.disconnected)
+                    localCallbacks.onError("Failed to set remote description: \(error)", nil)
                 } else {
                     self?.connectionStatus = .connected
-                    self?.callbacks.onStatusChange(.connected)
+                    localCallbacks.onStatusChange(.connected)
                 }
             }
         }
@@ -590,6 +601,9 @@ class WebRTCManager: NSObject, ObservableObject {
     private func handleIncomingJSON(_ jsonString: String) {
         print("Received JSON:\n\(jsonString)\n")
         
+        // Create a local copy of callbacks to prevent data races
+        let localCallbacks = self.callbacks
+        
         guard let data = jsonString.data(using: .utf8),
               let rawEvent = try? JSONSerialization.jsonObject(with: data),
               let eventDict = rawEvent as? [String: Any],
@@ -659,7 +673,7 @@ class WebRTCManager: NSObject, ObservableObject {
                         conversation = updatedConversation
                     }
                 }
-                self.callbacks.onMessage(transcript, .ai)
+                localCallbacks.onMessage(transcript, .ai)
             }
             
         case "conversation.item.input_audio_transcription.completed":
@@ -678,7 +692,7 @@ class WebRTCManager: NSObject, ObservableObject {
                         conversation = updatedConversation
                     }
                 }
-                self.callbacks.onMessage(transcript, .user)
+                localCallbacks.onMessage(transcript, .user)
             }
             
         default:
@@ -707,6 +721,9 @@ class WebRTCManager: NSObject, ObservableObject {
             return
         }
         
+        // Create a local copy of callbacks to prevent data races
+        let localCallbacks = self.callbacks
+        
         // Format the ICE candidate message
         let candidateMessage: [String: Any] = [
             "type": "candidate",
@@ -725,7 +742,7 @@ class WebRTCManager: NSObject, ObservableObject {
         print("[Outspeed] Sending ICE candidate: \(candidateString)")
         webSocket.send(.string(candidateString)) { error in
             if let error {
-                self.callbacks.onError("Failed to send ICE candidate: \(error)", nil)
+                localCallbacks.onError("Failed to send ICE candidate: \(error)", nil)
                 print("[Outspeed] Failed to send ICE candidate: \(error)")
             }
         }
@@ -755,6 +772,9 @@ extension WebRTCManager: RTCPeerConnectionDelegate {
     
     func peerConnection(_ peerConnection: RTCPeerConnection, didChange newState: RTCIceConnectionState) {
         let stateName: String
+        // Create a local copy of callbacks to prevent data races
+        let localCallbacks = self.callbacks
+        
         switch newState {
         case .new:
             stateName = "new"
@@ -764,33 +784,33 @@ extension WebRTCManager: RTCPeerConnectionDelegate {
             stateName = "connected"
             DispatchQueue.main.async { [weak self] in
                 self?.connectionStatus = .connected
-                self?.callbacks.onConnect(self?.conversationId ?? "")
-                self?.callbacks.onStatusChange(.connected)
+                localCallbacks.onConnect(self?.conversationId ?? "")
+                localCallbacks.onStatusChange(.connected)
             }
 
         case .completed:
             stateName = "completed"
             DispatchQueue.main.async { [weak self] in
                 self?.connectionStatus = .connected
-                self?.callbacks.onStatusChange(.connected)
+                localCallbacks.onStatusChange(.connected)
             }
         case .failed:
             stateName = "failed"
             DispatchQueue.main.async { [weak self] in
                 self?.connectionStatus = .disconnected
-                self?.callbacks.onStatusChange(.disconnected)
+                localCallbacks.onStatusChange(.disconnected)
             }
         case .disconnected:
             stateName = "disconnected"
             DispatchQueue.main.async { [weak self] in
                 self?.connectionStatus = .disconnected
-                self?.callbacks.onStatusChange(.disconnected)
+                localCallbacks.onStatusChange(.disconnected)
             }
         case .closed:
             stateName = "closed"
             DispatchQueue.main.async { [weak self] in
                 self?.connectionStatus = .disconnected
-                self?.callbacks.onStatusChange(.disconnected)
+                localCallbacks.onStatusChange(.disconnected)
             }
         case .count:
             stateName = "count"
