@@ -141,13 +141,16 @@ class WebRTCManager: NSObject, ObservableObject {
                     return
                 }
                 
-                Task { @MainActor [weak self] in
+                // Capture only the SDP string (a Sendable value) to avoid capturing the non-Sendable peerConnection reference.
+                guard let localSdp = peerConnection.localDescription?.sdp else {
+                    self.callbacks.onError("Failed to obtain local SDP", nil)
+                    return
+                }
+                
+                Task { @MainActor [weak self, localSdp] in
                     // Create an immutable local copy of callbacks to prevent data races
                     let localCallbacks = self?.callbacks
                     do {
-                        guard let localSdp = peerConnection.localDescription?.sdp else {
-                            return
-                        }                        
                         // Handle connection based on provider
                         switch self?.provider {
                         case .openai:
