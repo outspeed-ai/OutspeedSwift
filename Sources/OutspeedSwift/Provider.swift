@@ -1,10 +1,10 @@
 import Foundation
 
-enum Provider: String {
+public enum Provider: String {
     case openai
     case outspeed
     
-    var baseURL: String {
+    public var baseURL: String {
         switch self {
         case .openai:
             return "api.openai.com"
@@ -13,7 +13,7 @@ enum Provider: String {
         }
     }
     
-    var modelOptions: [String] {
+    public var modelOptions: [String] {
         switch self {
         case .openai:
             return [
@@ -25,7 +25,7 @@ enum Provider: String {
         }
     }
     
-    var voiceOptions: [String] {
+    public var voiceOptions: [String] {
         switch self {
         case .openai:
             return ["alloy", "ash", "ballad", "coral", "echo", "sage", "shimmer", "verse"]
@@ -34,7 +34,7 @@ enum Provider: String {
         }
     }
     
-    var defaultModel: String {
+    public var defaultModel: String {
         switch self {
         case .openai:
             return "gpt-4o-mini-realtime-preview-2024-12-17"
@@ -43,7 +43,7 @@ enum Provider: String {
         }
     }
     
-    var defaultVoice: String {
+    public var defaultVoice: String {
         switch self {
         case .openai:
             return "alloy"
@@ -52,7 +52,7 @@ enum Provider: String {
         }
     }
     
-    var defaultSystemMessage: String {
+    public var defaultSystemMessage: String {
         switch self {
         case .openai:
             return "You are a helpful, witty, and friendly AI. Act like a human. Your voice and personality should be warm and engaging, with a lively and playful tone. Talk quickly."

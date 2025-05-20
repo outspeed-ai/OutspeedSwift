@@ -1,5 +1,19 @@
 import WebRTC
 import AVFoundation
+import Foundation
+
+// MARK: - Connection Status
+enum ConnectionStatus {
+    case connected
+    case disconnected
+}
+
+// MARK: - Conversation Item
+public struct ConversationItem: Identifiable {
+    public let id: String       // item_id from the JSON
+    public let role: String     // "user" / "assistant"
+    public var text: String     // transcript
+}
 
 // MARK: - WebRTCManager
 class WebRTCManager: NSObject, ObservableObject {
