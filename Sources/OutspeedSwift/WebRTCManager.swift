@@ -34,16 +34,16 @@ public struct Callbacks: Sendable {
     public init() {}
 }
 
-struct ConversationItem: Identifiable {
-    let id: String       // item_id from the JSON
-    let role: String     // "user" / "assistant"
-    var text: String     // transcript
+public struct ConversationItem: Identifiable {
+    public let id: String       // item_id from the JSON
+    public let role: String     // "user" / "assistant"
+    public var text: String     // transcript
     
-    var roleSymbol: String {
+    public var roleSymbol: String {
         role.lowercased() == "user" ? "person.fill" : "sparkles"
     }
     
-    var roleColor: Color {
+    public var roleColor: Color {
         role.lowercased() == "user" ? .blue : .purple
     }
 }
@@ -51,12 +51,12 @@ struct ConversationItem: Identifiable {
 // MARK: - WebRTCManager
 public class WebRTCManager: NSObject, ObservableObject {
     // UI State
-    @Published var connectionStatus: Status = .disconnected
-    @Published var eventTypeStr: String = ""
+    @Published public var connectionStatus: Status = .disconnected
+    @Published public var eventTypeStr: String = ""
     
     // Basic conversation text
-    @Published var conversation: [ConversationItem] = []
-    @Published var outgoingMessage: String = ""
+    @Published public var conversation: [ConversationItem] = []
+    @Published public var outgoingMessage: String = ""
     
     // We'll store items by item_id for easy updates
     private var conversationMap: [String : ConversationItem] = [:]
