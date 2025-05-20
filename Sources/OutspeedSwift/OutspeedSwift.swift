@@ -40,7 +40,7 @@ public class OutspeedSDK : ObservableObject {
         case en, ja, zh, de, hi, fr, ko, pt, it, es, id, nl, tr, pl, sv, bg, ro, ar, cs, el, fi, ms, da, ta, uk, ru, hu, no, vi
     }
 
-    struct AgentPrompt: Codable, Sendable {
+    public struct AgentPrompt: Codable, Sendable {
         var prompt: String?
 
         init(prompt: String? = nil) {
@@ -60,17 +60,17 @@ public class OutspeedSDK : ObservableObject {
         }
     }
 
-    struct ConversationConfigOverride: Codable, Sendable {
+    public struct ConversationConfigOverride: Codable, Sendable {
         var agent: AgentConfig?
         var tts: TTSConfig?
 
-        init(agent: AgentConfig? = nil, tts: TTSConfig? = nil) {
+        public init(agent: AgentConfig? = nil, tts: TTSConfig? = nil) {
             self.agent = agent
             self.tts = tts
         }
     }
 
-    struct AgentConfig: Codable, Sendable {
+    public struct AgentConfig: Codable, Sendable {
         var prompt: AgentPrompt?
         var firstMessage: String?
         var language: Language?
@@ -133,7 +133,7 @@ public class OutspeedSDK : ObservableObject {
         let customLlmExtraBody: [String: LlmExtraBodyValue]?
         let dynamicVariables: [String: DynamicVariableValue]?
 
-        init(signedUrl: String, overrides: ConversationConfigOverride? = nil, customLlmExtraBody: [String: LlmExtraBodyValue]? = nil, dynamicVariables: [String: DynamicVariableValue]? = nil) {
+        public init(signedUrl: String, overrides: ConversationConfigOverride? = nil, customLlmExtraBody: [String: LlmExtraBodyValue]? = nil, dynamicVariables: [String: DynamicVariableValue]? = nil) {
             print("signedUrl, overrides, customLlmExtraBody, and dynamicVariables are not yet supported by OutspeedSwift. Ignoring them.")
             self.signedUrl = signedUrl
             agentId = nil
@@ -142,7 +142,7 @@ public class OutspeedSDK : ObservableObject {
             self.dynamicVariables = dynamicVariables
         }
 
-        init(agentId: String, overrides: ConversationConfigOverride? = nil, customLlmExtraBody: [String: LlmExtraBodyValue]? = nil, dynamicVariables: [String: DynamicVariableValue]? = nil) {
+        public init(agentId: String, overrides: ConversationConfigOverride? = nil, customLlmExtraBody: [String: LlmExtraBodyValue]? = nil, dynamicVariables: [String: DynamicVariableValue]? = nil) {
             print("agentId, overrides, customLlmExtraBody, and dynamicVariables are not yet supported by OutspeedSwift. Ignoring them.")
             self.agentId = agentId
             signedUrl = nil
