@@ -10,7 +10,7 @@ import UIKit
 
 /// Main class for OutspeedSwift package
 public class OutspeedSDK : ObservableObject {
-    public static let version: String = "0.0.1"
+    public static let version: String = "0.0.2"
     public init() {
         #if os(iOS)
         // Prevent usage on iOS versions newer than 18.3.1

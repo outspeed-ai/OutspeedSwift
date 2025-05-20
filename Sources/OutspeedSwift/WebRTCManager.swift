@@ -54,6 +54,9 @@ public class WebRTCManager: NSObject, ObservableObject {
         provider: Provider = .openai
     ) {
 
+        self.connectionStatus = .connecting
+        self.callbacks.onStatusChange(.connecting)
+
         conversation.removeAll()
         conversationMap.removeAll()
         
