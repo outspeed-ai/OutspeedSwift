@@ -18,20 +18,35 @@ A Swift SDK for the Outspeed API that enables real-time voice conversations usin
 Add the following dependency to your `Package.swift` file:
 
 ```swift
-.package(url: "https://github.com/yourusername/OutspeedSwift.git", from: "1.0.0")
+.package(url: "https://github.com/outspeed-ai/OutspeedSwift", from: "0.0.2")
 ```
 
-And add `OutspeedSwift` to your target dependencies:
+And add `OutspeedSDK` to your target dependencies:
 
 ```swift
 .target(
     name: "YourTarget",
-    dependencies: ["OutspeedSwift"]),
+    dependencies: ["OutspeedSDK"]),
 ```
+
+### Xcode
+
+1. Open Your Project in Xcode
+   - Navigate to your project directory and open it in Xcode.
+2. Add Package Dependency
+   - Go to `File` > `Add Packages...`
+3. Enter Repository URL in the Search Bar
+   - Input the following URL: `https://github.com/outspeed-ai/OutspeedSwift`
+4. Select Version
+5. Import the SDK
+   ```swift
+   import OutspeedSDK
+   ```
+6. Ensure `NSMicrophoneUsageDescription` is added to your Info.plist to explain microphone access.
 
 ## Requirements
 
-- iOS 18.0+
+- iOS >=18.0 <18.4
 - Swift 6.1+
 
 ## Usage
@@ -39,14 +54,10 @@ And add `OutspeedSwift` to your target dependencies:
 ### Basic Setup
 
 ```swift
-import OutspeedSwift
+import OutspeedSDK
 
 // Create a session configuration
-let config = OutspeedSDK.SessionConfig(
-    apiKey: "your-api-key",  // Replace with your actual API key
-    systemInstructions: "You are a helpful, friendly assistant.",
-    provider: .outspeed  // or .openai
-)
+let config = OutspeedSDK.SessionConfig( agentId : "testagent")
 
 // Create callbacks to handle events
 let callbacks = OutspeedSDK.Callbacks()
@@ -68,88 +79,57 @@ Task {
         let conversation = try await OutspeedSDK.Conversation.startSession(
             config: config,
             callbacks: callbacks
+            apiKey: "<YOUR_OUTSPEED_API_KEY>"
         )
 
-        // Send a message
-        conversation.sendMessage("Hello, how are you today?")
 
         // When done with the conversation
-        // conversation.endSession()
+        conversation.endSession()
     } catch {
         print("Failed to start conversation: \(error)")
     }
 }
 ```
 
-### Customizing Voice and Model
+## ElevenLabs Swift Compatibilty
+
+OutspeedSDK is fully compatible with Elevenlabs Swift SDK specifications (some features might not be fully supported yet.)
+
+To switch from ElevenLabsSDK:
+
+1. Replace all occurrences of "ElevenLabsSDK" with "OutspeedSDK". So for example:
 
 ```swift
-// Create a session with custom voice and model
-let config = OutspeedSDK.SessionConfig(
-    apiKey: "your-api-key",
-    modelName: "Orpheus-3b",           // Or any supported model
-    systemInstructions: "You are a helpful assistant specialized in Swift programming.",
-    voice: "tara",                    // Choose a voice from Provider.voiceOptions
-    provider: .outspeed               // Use .openai for OpenAI models
+import ElevenLabsSDK
+
+let config = ElevenLabsSDK.SessionConfig( agentId : "testagent")
+```
+
+becomes
+
+```swift
+import OutspeedSDK
+
+let config = OutspeedSDK.SessionConfig( agentId : "testagent")
+```
+
+2. Add your Outspeed API key to `startSession`:
+
+```swift
+
+let conversation = try await ElevenLabsSDK.Conversation.startSession(
+    config: config,
+    callbacks: callbacks
 )
 ```
 
-### Handling Audio Volume
+becomes
 
 ```swift
-// Set up volume update callback
-callbacks.onVolumeUpdate = { level in
-    // Update UI with volume level (0.0 to 1.0)
-    updateVolumeIndicator(level: level)
-}
-```
 
-### Stopping and Starting Recording
-
-```swift
-// To pause recording (e.g., when user wants to stop speaking)
-conversation.stopRecording()
-
-// To resume recording
-conversation.startRecording()
-```
-
-### Ending a Conversation
-
-```swift
-// When done with the conversation
-conversation.endSession()
-```
-
-## Advanced Usage
-
-### Provider Selection
-
-The SDK supports two providers: Outspeed and OpenAI.
-
-```swift
-// Get available models for a provider
-let availableModels = Provider.outspeed.modelOptions
-
-// Get available voices for a provider
-let availableVoices = Provider.openai.voiceOptions
-```
-
-### Session Configurations
-
-For specific use cases, you can configure all aspects of the session:
-
-```swift
-// Custom configuration
-let config = OutspeedSDK.SessionConfig(
-    apiKey: "your-api-key",
-    modelName: "custom-model-name",
-    systemInstructions: "Detailed instructions for the AI...",
-    voice: "selected-voice",
-    provider: .outspeed
+let conversation = try await OutspeedSDK.Conversation.startSession(
+    config: config,
+    callbacks: callbacks
+    apiKey: "<YOUR_OUTSPEED_API_KEY>"
 )
 ```
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
