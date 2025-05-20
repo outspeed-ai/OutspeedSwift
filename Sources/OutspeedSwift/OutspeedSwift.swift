@@ -318,7 +318,7 @@ public class OutspeedSDK : ObservableObject {
         ///   - clientTools: Client tools callbacks (optional)
         ///   - apiKey: API key for the conversation
         /// - Returns: A started `Conversation` instance
-        static func startSession(config: SessionConfig, callbacks: Callbacks = Callbacks(), apiKey: String) async throws -> Conversation {
+        static func startSession(callbacks: Callbacks = Callbacks(), apiKey: String) async throws -> Conversation {
             // Step 2: Create the WebSocket connection
             let connection = WebRTCManager()
 
