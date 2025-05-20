@@ -49,7 +49,7 @@ struct ConversationItem: Identifiable {
 }
 
 // MARK: - WebRTCManager
-class WebRTCManager: NSObject, ObservableObject {
+public class WebRTCManager: NSObject, ObservableObject {
     // UI State
     @Published var connectionStatus: Status = .disconnected
     @Published var eventTypeStr: String = ""
@@ -778,17 +778,21 @@ class WebRTCManager: NSObject, ObservableObject {
         }
         pendingIceCandidates.removeAll()
     }
+
+    func getConnectionStatus() -> Status {
+        return connectionStatus
+    }
 }
 
 // MARK: - RTCPeerConnectionDelegate
 extension WebRTCManager: RTCPeerConnectionDelegate {
-    func peerConnection(_ peerConnection: RTCPeerConnection, didChange stateChanged: RTCSignalingState) {}
+    public func peerConnection(_ peerConnection: RTCPeerConnection, didChange stateChanged: RTCSignalingState) {}
     
-    func peerConnection(_ peerConnection: RTCPeerConnection, didAdd stream: RTCMediaStream) {}
-    func peerConnection(_ peerConnection: RTCPeerConnection, didRemove stream: RTCMediaStream) {}
-    func peerConnectionShouldNegotiate(_ peerConnection: RTCPeerConnection) {}
+    public func peerConnection(_ peerConnection: RTCPeerConnection, didAdd stream: RTCMediaStream) {}
+    public func peerConnection(_ peerConnection: RTCPeerConnection, didRemove stream: RTCMediaStream) {}
+    public func peerConnectionShouldNegotiate(_ peerConnection: RTCPeerConnection) {}
     
-    func peerConnection(_ peerConnection: RTCPeerConnection, didChange newState: RTCIceConnectionState) {
+    public func peerConnection(_ peerConnection: RTCPeerConnection, didChange newState: RTCIceConnectionState) {
         let stateName: String
         // Create a local copy of callbacks to prevent data races
         let localCallbacks = self.callbacks
@@ -826,11 +830,11 @@ extension WebRTCManager: RTCPeerConnectionDelegate {
         print("ICE Connection State changed to: \(stateName)")
     }
     
-    func peerConnection(_ peerConnection: RTCPeerConnection, didChange newState: RTCIceGatheringState) {}
+    public func peerConnection(_ peerConnection: RTCPeerConnection, didChange newState: RTCIceGatheringState) {}
     
-    func peerConnection(_ peerConnection: RTCPeerConnection, didRemove candidates: [RTCIceCandidate]) {}
+    public func peerConnection(_ peerConnection: RTCPeerConnection, didRemove candidates: [RTCIceCandidate]) {}
     
-    func peerConnection(_ peerConnection: RTCPeerConnection, didOpen dataChannel: RTCDataChannel) {
+    public func peerConnection(_ peerConnection: RTCPeerConnection, didOpen dataChannel: RTCDataChannel) {
         // If the server creates the data channel on its side, handle it here
         dataChannel.delegate = self
     }
@@ -838,7 +842,7 @@ extension WebRTCManager: RTCPeerConnectionDelegate {
 
 // MARK: - RTCDataChannelDelegate
 extension WebRTCManager: RTCDataChannelDelegate {
-    func dataChannelDidChangeState(_ dataChannel: RTCDataChannel) {
+    public func dataChannelDidChangeState(_ dataChannel: RTCDataChannel) {
         print("Data channel state changed: \(dataChannel.readyState)")
         // Auto-send session.update after channel is open
         if dataChannel.readyState == .open {
@@ -848,7 +852,7 @@ extension WebRTCManager: RTCDataChannelDelegate {
         }
     }
     
-    func dataChannel(_ dataChannel: RTCDataChannel,
+    public func dataChannel(_ dataChannel: RTCDataChannel,
                      didReceiveMessageWith buffer: RTCDataBuffer) {
         guard let message = String(data: buffer.data, encoding: .utf8) else {
             return
