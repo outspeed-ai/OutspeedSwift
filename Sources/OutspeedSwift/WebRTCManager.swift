@@ -141,30 +141,38 @@ class WebRTCManager: NSObject, ObservableObject {
                     return
                 }
                 
-                Task {
+                Task { @MainActor [weak self] in
                     // Create an immutable local copy of callbacks to prevent data races
-                    let localCallbacks = self.callbacks
+                    let localCallbacks = self?.callbacks
                     do {
                         guard let localSdp = peerConnection.localDescription?.sdp else {
                             return
                         }                        
                         // Handle connection based on provider
-                        switch self.provider {
+                        switch self?.provider {
                         case .openai:
-                            let answerSdp = try await self.fetchRemoteSDPOpenAI(apiKey: apiKey, localSdp: localSdp)
-                            await self.setRemoteDescription(answerSdp)
+                            let answerSdp = try await self?.fetchRemoteSDPOpenAI(apiKey: apiKey, localSdp: localSdp)
+                            if let answerSdp = answerSdp {
+                                await self?.setRemoteDescription(answerSdp)
+                            } else {
+                                localCallbacks?.onError("Failed to get SDP answer from server", nil)
+                            }
                         case .outspeed:
                             // First get ephemeral key
-                            let ephemeralKey = try await self.getEphemeralKeyOutspeed(apiKey: apiKey)
-                            // Then establish WebRTC connection
-                            try await self.fetchRemoteSDPOutspeed(ephemeralKey: ephemeralKey, localSdp: localSdp)
+                            let ephemeralKey = try await self?.getEphemeralKeyOutspeed(apiKey: apiKey)
+                            if let ephemeralKey = ephemeralKey {
+                                // Then establish WebRTC connection
+                                try await self?.fetchRemoteSDPOutspeed(ephemeralKey: ephemeralKey, localSdp: localSdp)
+                            } else {
+                                localCallbacks?.onError("Failed to get ephemeral key from server", nil)
+                            }
                         }
                     } catch {
                         // Use the local copy of callbacks here
-                        localCallbacks.onError("Error in connection process: \(error)", nil)
+                        localCallbacks?.onError("Error in connection process: \(error)", nil)
                         print("Error in connection process: \(error)")
-                        self.connectionStatus = .disconnected
-                        localCallbacks.onStatusChange(.disconnected)
+                        self?.connectionStatus = .disconnected
+                        localCallbacks?.onStatusChange(.disconnected)
                     }
                 }
             }
@@ -524,11 +532,11 @@ class WebRTCManager: NSObject, ObservableObject {
                             case "answer":
                                 print("[Outspeed][WebSocket] Answer received.")
                                 if let sdp = json["sdp"] as? String {
-                                    Task {
-                                        await self.setRemoteDescription(sdp)
+                                    Task { @MainActor [weak self] in
+                                        await self?.setRemoteDescription(sdp)
                                         
                                         // Send any pending ICE candidates after answer is received
-                                        self.sendPendingIceCandidates()
+                                        self?.sendPendingIceCandidates()
                                         
                                         continuation.resume() 
                                     }
@@ -769,14 +777,12 @@ class WebRTCManager: NSObject, ObservableObject {
 
 // MARK: - RTCPeerConnectionDelegate
 extension WebRTCManager: RTCPeerConnectionDelegate {
-    @MainActor
     func peerConnection(_ peerConnection: RTCPeerConnection, didChange stateChanged: RTCSignalingState) {}
     
     func peerConnection(_ peerConnection: RTCPeerConnection, didAdd stream: RTCMediaStream) {}
     func peerConnection(_ peerConnection: RTCPeerConnection, didRemove stream: RTCMediaStream) {}
     func peerConnectionShouldNegotiate(_ peerConnection: RTCPeerConnection) {}
     
-    @MainActor
     func peerConnection(_ peerConnection: RTCPeerConnection, didChange newState: RTCIceConnectionState) {
         let stateName: String
         // Create a local copy of callbacks to prevent data races
@@ -832,7 +838,7 @@ extension WebRTCManager: RTCDataChannelDelegate {
         // Auto-send session.update after channel is open
         if dataChannel.readyState == .open {
             Task { @MainActor [weak self] in
-                self?.sendSessionUpdate()
+                await self?.sendSessionUpdate()
             }
         }
     }
@@ -843,7 +849,7 @@ extension WebRTCManager: RTCDataChannelDelegate {
             return
         }
         Task { @MainActor [weak self] in
-            self?.handleIncomingJSON(message)
+            await self?.handleIncomingJSON(message)
         }
     }
 }
