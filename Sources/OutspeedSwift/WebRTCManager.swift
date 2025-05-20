@@ -181,10 +181,10 @@ class WebRTCManager: NSObject, ObservableObject {
         outspeedWebSocket?.cancel(with: .normalClosure, reason: nil)
         outspeedWebSocket = nil
         
-        DispatchQueue.main.async { [weak self] in
-            self?.connectionStatus = .disconnected
-            self?.callbacks.onStatusChange(.disconnected)
-        }
+        // DispatchQueue.main.async { [weak self] in
+        //     self?.connectionStatus = .disconnected
+        //     self?.callbacks.onStatusChange(.disconnected)
+        // }
     }
     
     /// Sends a custom "conversation.item.create" event
@@ -342,11 +342,11 @@ class WebRTCManager: NSObject, ObservableObject {
             DispatchQueue.main.async {
                 if let error {
                     print("Failed to set remote description: \(error)")
-                    self?.connectionStatus = .disconnected
+//                    self?.connectionStatus = .disconnected
                     localCallbacks.onStatusChange(.disconnected)
                     localCallbacks.onError("Failed to set remote description: \(error)", nil)
                 } else {
-                    self?.connectionStatus = .connected
+//                    self?.connectionStatus = .connected
                     localCallbacks.onStatusChange(.connected)
                 }
             }
@@ -785,33 +785,33 @@ extension WebRTCManager: RTCPeerConnectionDelegate {
         case .connected:
             stateName = "connected"
             DispatchQueue.main.async { [weak self] in
-                self?.connectionStatus = .connected
-                localCallbacks.onConnect(self?.conversationId ?? "")
+//                self?.connectionStatus = .connected
+                localCallbacks.onConnect("")
                 localCallbacks.onStatusChange(.connected)
             }
 
         case .completed:
             stateName = "completed"
             DispatchQueue.main.async { [weak self] in
-                self?.connectionStatus = .connected
+//                self?.connectionStatus = .connected
                 localCallbacks.onStatusChange(.connected)
             }
         case .failed:
             stateName = "failed"
             DispatchQueue.main.async { [weak self] in
-                self?.connectionStatus = .disconnected
+//                self?.connectionStatus = .disconnected
                 localCallbacks.onStatusChange(.disconnected)
             }
         case .disconnected:
             stateName = "disconnected"
             DispatchQueue.main.async { [weak self] in
-                self?.connectionStatus = .disconnected
+//                self?.connectionStatus = .disconnected
                 localCallbacks.onStatusChange(.disconnected)
             }
         case .closed:
             stateName = "closed"
             DispatchQueue.main.async { [weak self] in
-                self?.connectionStatus = .disconnected
+//                self?.connectionStatus = .disconnected
                 localCallbacks.onStatusChange(.disconnected)
             }
         case .count:
