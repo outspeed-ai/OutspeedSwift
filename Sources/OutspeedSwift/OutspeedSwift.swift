@@ -171,7 +171,7 @@ public class OutspeedSDK : ObservableObject {
             var initEvent: [String: Any] = ["type": "conversation_initiation_client_data"]
 
             // Add overrides if present
-            if let overrides = config.overrides,
+            if let overrides: OutspeedSDK.ConversationConfigOverride = config.overrides,
                let overridesDict = overrides.dictionary
             {
                 initEvent["conversation_config_override"] = overridesDict
@@ -244,54 +244,12 @@ public class OutspeedSDK : ObservableObject {
         public let connection: WebRTCManager
         private let callbacks: Callbacks
 
-        private let modeLock = NSLock()
-        private let statusLock = NSLock()
-        private let volumeLock = NSLock()
-        private let lastInterruptTimestampLock = NSLock()
-        private let isProcessingInputLock = NSLock()
-
         private var inputVolumeUpdateTimer: Timer?
         private let inputVolumeUpdateInterval: TimeInterval = 0.1 // Update every 100ms
         private var currentInputVolume: Float = 0.0
 
         private var _mode: Mode = .listening
         private var _status: Status = .connecting
-        private var _volume: Float = 1.0
-        private var _lastInterruptTimestamp: Int = 0
-        private var _isProcessingInput: Bool = true
-
-        private var mode: Mode {
-            get { modeLock.withLock { _mode } }
-            set { modeLock.withLock { _mode = newValue } }
-        }
-
-        private var status: Status {
-            get { statusLock.withLock { _status } }
-            set { statusLock.withLock { _status = newValue } }
-        }
-
-        private var volume: Float {
-            get { volumeLock.withLock { _volume } }
-            set { volumeLock.withLock { _volume = newValue } }
-        }
-
-        private var lastInterruptTimestamp: Int {
-            get { lastInterruptTimestampLock.withLock { _lastInterruptTimestamp } }
-            set { lastInterruptTimestampLock.withLock { _lastInterruptTimestamp = newValue } }
-        }
-
-        private var isProcessingInput: Bool {
-            get { isProcessingInputLock.withLock { _isProcessingInput } }
-            set { isProcessingInputLock.withLock { _isProcessingInput = newValue } }
-        }
-
-        private var audioBuffers: [AVAudioPCMBuffer] = []
-        private let audioBufferLock = NSLock()
-
-        private var previousSamples: [Int16] = Array(repeating: 0, count: 10)
-        private var isFirstBuffer = true
-
-        private var outputBuffers: [[Float]] = [[]]
 
         private let logger = Logger(subsystem: "com.outspeed.OutspeedSDK", category: "Conversation")
 
@@ -353,19 +311,6 @@ public class OutspeedSDK : ObservableObject {
         }
 
 
-        private func updateMode(_ newMode: Mode) {
-            guard mode != newMode else { return }
-            mode = newMode
-            callbacks.onModeChange(newMode)
-        }
-
-        private func updateStatus(_ newStatus: Status) {
-            guard status != newStatus else { return }
-            status = newStatus
-            callbacks.onStatusChange(newStatus)
-        }
-
-
         // TODO: Implement this
         // private func sendWebSocketMessage(_ message: [String: Any]) {
         //     guard let data = try? JSONSerialization.data(withJSONObject: message),
@@ -395,8 +340,6 @@ public class OutspeedSDK : ObservableObject {
 
         /// Ends the current conversation session
         public func endSession() {
-            guard status == .connected else { return }
-
             connection.stopConnection()
 
             DispatchQueue.main.async {
@@ -415,17 +358,6 @@ public class OutspeedSDK : ObservableObject {
         /// - Returns: Current input volume
         public func getInputVolume() -> Float {
             0
-        }
-
-
-        /// Starts recording audio input
-        public func startRecording() {
-            isProcessingInput = true
-        }
-
-        /// Stops recording audio input
-        public func stopRecording() {
-            isProcessingInput = false
         }
 
     }
@@ -466,24 +398,6 @@ public class OutspeedSDK : ObservableObject {
     }
 }
 
-extension NSLock {
-    /// Executes a closure within a locked context
-    /// - Parameter body: Closure to execute
-    /// - Returns: Result of the closure
-    func withLock<T>(_ body: () throws -> T) rethrows -> T {
-        lock()
-        defer { unlock() }
-        return try body()
-    }
-}
-
-private extension Data {
-    /// Initializes `Data` from an array of Int16
-    /// - Parameter buffer: Array of Int16 values
-    init(buffer: [Int16]) {
-        self = buffer.withUnsafeBufferPointer { Data(buffer: $0) }
-    }
-}
 
 extension Encodable {
     var dictionary: [String: Any]? {
