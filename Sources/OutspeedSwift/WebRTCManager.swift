@@ -99,41 +99,51 @@ class WebRTCManager: NSObject, ObservableObject {
             mandatoryConstraints: ["levelControl": "true"],
             optionalConstraints: nil
         )
-        peerConnection.offer(for: constraints) { [weak self] sdp, error in
-            guard let self = self,
-                  let sdp = sdp,
-                  error == nil else {
-                print("Failed to create offer: \(String(describing: error))")
-                return
-            }
-            // Set local description
-            peerConnection.setLocalDescription(sdp) { [weak self] error in
-                guard let self = self, error == nil else {
-                    print("Failed to set local description: \(String(describing: error))")
-                    return
-                }
-                
-                Task {
-                    do {
-                        guard let localSdp = peerConnection.localDescription?.sdp else {
-                            return
-                        }                        
-                        // Handle connection based on provider
-                        switch self.provider {
-                        case .openai:
-                            let answerSdp = try await self.fetchRemoteSDPOpenAI(apiKey: apiKey, localSdp: localSdp)
-                            await self.setRemoteDescription(answerSdp)
-                        case .outspeed:
-                            // First get ephemeral key
-                            let ephemeralKey = try await self.getEphemeralKeyOutspeed(apiKey: apiKey)
-                            // Then establish WebRTC connection
-                            try await self.fetchRemoteSDPOutspeed(ephemeralKey: ephemeralKey, localSdp: localSdp)
+        
+        // Create and store the offer in a Task to avoid data races
+        Task { @MainActor in
+            do {
+                // Create the offer and set local description
+                let sdp = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<RTCSessionDescription, Error>) in
+                    peerConnection.offer(for: constraints) { sdp, error in
+                        if let error = error {
+                            continuation.resume(throwing: error)
+                        } else if let sdp = sdp {
+                            continuation.resume(returning: sdp)
+                        } else {
+                            continuation.resume(throwing: NSError(domain: "WebRTCManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to create offer: no SDP and no error"]))
                         }
-                    } catch {
-                        print("Error in connection process: \(error)")
-                        self.connectionStatus = .disconnected
                     }
                 }
+                
+                try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                    peerConnection.setLocalDescription(sdp) { error in
+                        if let error = error {
+                            continuation.resume(throwing: error)
+                        } else {
+                            continuation.resume()
+                        }
+                    }
+                }
+                
+                guard let localSdp = peerConnection.localDescription?.sdp else {
+                    throw NSError(domain: "WebRTCManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Missing local SDP after setting local description"])
+                }
+                
+                // Handle connection based on provider
+                switch self.provider {
+                case .openai:
+                    let answerSdp = try await self.fetchRemoteSDPOpenAI(apiKey: apiKey, localSdp: localSdp)
+                    await self.setRemoteDescription(answerSdp)
+                case .outspeed:
+                    // First get ephemeral key
+                    let ephemeralKey = try await self.getEphemeralKeyOutspeed(apiKey: apiKey)
+                    // Then establish WebRTC connection
+                    try await self.fetchRemoteSDPOutspeed(ephemeralKey: ephemeralKey, localSdp: localSdp)
+                }
+            } catch {
+                print("Error in connection process: \(error)")
+                self.connectionStatus = .disconnected
             }
         }
     }
