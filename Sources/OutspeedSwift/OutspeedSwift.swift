@@ -4,10 +4,21 @@ import Foundation
 import os.log
 import WebRTC
 import SwiftUI
+import UIKit
+
+
+
 /// Main class for OutspeedSwift package
 public class OutspeedSDK : ObservableObject {
     public static let version = "0.0.1"
-    public init() {}
+    public init() {
+        #if os(iOS)
+        // Prevent usage on iOS versions newer than 18.3.1
+        if #available(iOS 18.4, *) {
+            fatalError("This build is not intended for iOS versions after 18.3.1")
+        }
+        #endif
+    }
 
     private enum Constants {
         static let defaultApiOrigin = "api.outspeed.com"
@@ -140,6 +151,7 @@ public class OutspeedSDK : ObservableObject {
             self.dynamicVariables = dynamicVariables
         }
     }
+
 
     class Connection: @unchecked Sendable {
         let socket: URLSessionWebSocketTask
@@ -278,6 +290,15 @@ public class OutspeedSDK : ObservableObject {
         /// - Returns: A started `Conversation` instance
         public static func startSession(callbacks: Callbacks = Callbacks(), apiKey: String, provider: Provider = .openai) async throws -> Conversation {
             // Step 2: Create the WebSocket connection
+            #if os(iOS)
+            // Prevent usage on iOS versions newer than 18.3.1
+            if #available(iOS 18.4, *) {
+                print("OutspeedSwift build is not intended for iOS versions after 18.3.1")
+                fatalError("OutspeedSwift build is not intended for iOS versions after 18.3.1")
+            }
+            #endif
+
+
             let connection = WebRTCManager()
 
             try connection.startConnection(apiKey: apiKey, callbacks: callbacks, provider: provider)
