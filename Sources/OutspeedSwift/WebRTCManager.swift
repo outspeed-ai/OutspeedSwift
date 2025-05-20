@@ -103,30 +103,41 @@ class WebRTCManager: NSObject, ObservableObject {
         // Create and store the offer in a Task to avoid data races
         Task { @MainActor in
             do {
-                // Create the offer and set local description
+                // Create the offer and set local description on the main thread
                 let sdp = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<RTCSessionDescription, Error>) in
-                    peerConnection.offer(for: constraints) { sdp, error in
-                        if let error = error {
-                            continuation.resume(throwing: error)
-                        } else if let sdp = sdp {
-                            continuation.resume(returning: sdp)
-                        } else {
-                            continuation.resume(throwing: NSError(domain: "WebRTCManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to create offer: no SDP and no error"]))
+                    DispatchQueue.main.async {
+                        self.peerConnection?.offer(for: constraints) { sdp, error in
+                            if let error = error {
+                                continuation.resume(throwing: error)
+                            } else if let sdp = sdp {
+                                continuation.resume(returning: sdp)
+                            } else {
+                                continuation.resume(throwing: NSError(domain: "WebRTCManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to create offer: no SDP and no error"]))
+                            }
                         }
                     }
                 }
                 
                 try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-                    peerConnection.setLocalDescription(sdp) { error in
-                        if let error = error {
-                            continuation.resume(throwing: error)
-                        } else {
-                            continuation.resume()
+                    DispatchQueue.main.async {
+                        self.peerConnection?.setLocalDescription(sdp) { error in
+                            if let error = error {
+                                continuation.resume(throwing: error)
+                            } else {
+                                continuation.resume()
+                            }
                         }
                     }
                 }
                 
-                guard let localSdp = peerConnection.localDescription?.sdp else {
+                // Get the local SDP on the main thread
+                let localSdp = await withCheckedContinuation { (continuation: CheckedContinuation<String?, Never>) in
+                    DispatchQueue.main.async {
+                        continuation.resume(returning: self.peerConnection?.localDescription?.sdp)
+                    }
+                }
+                
+                guard let localSdp = localSdp else {
                     throw NSError(domain: "WebRTCManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Missing local SDP after setting local description"])
                 }
                 
