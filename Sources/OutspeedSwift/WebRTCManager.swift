@@ -8,34 +8,6 @@ import os
 
 let logger = Logger(subsystem: "com.outspeed.outspeed-swift", category: "WebRTCManager")    
 
-public enum Role: String {
-    case user
-    case ai
-}
-
-
-public enum Mode: String {
-    case speaking
-    case listening
-}
-
-
-
-
-public struct ConversationItem: Identifiable {
-    public let id: String       // item_id from the JSON
-    public let role: String     // "user" / "assistant"
-    public var text: String     // transcript
-    
-    public var roleSymbol: String {
-        role.lowercased() == "user" ? "person.fill" : "sparkles"
-    }
-    
-    public var roleColor: Color {
-        role.lowercased() == "user" ? .blue : .purple
-    }
-}
-
 // MARK: - WebRTCManager
 public class WebRTCManager: NSObject, ObservableObject {
     // UI State
@@ -43,11 +15,11 @@ public class WebRTCManager: NSObject, ObservableObject {
     @Published public var eventTypeStr: String = ""
     
     // Basic conversation text
-    @Published public var conversation: [ConversationItem] = []
+    @Published public var conversation: [OutspeedSDK.ConversationItem] = []
     @Published public var outgoingMessage: String = ""
     
     // We'll store items by item_id for easy updates
-    private var conversationMap: [String : ConversationItem] = [:]
+    private var conversationMap: [String : OutspeedSDK.ConversationItem] = [:]
     
     // Model & session config
     private var modelName: String = "gpt-4o-mini-realtime-preview-2024-12-17"
@@ -599,9 +571,7 @@ public class WebRTCManager: NSObject, ObservableObject {
     }
     
     @MainActor
-    private func handleIncomingJSON(_ jsonString: String) {
-        print("Received JSON:\n\(jsonString)\n")
-        
+    private func handleIncomingJSON(_ jsonString: String) {        
         // Create a local copy of callbacks to prevent data races
         let localCallbacks = self.callbacks
         
@@ -630,7 +600,7 @@ public class WebRTCManager: NSObject, ObservableObject {
                 // If item contains "content", extract the text
                 let text = (item["content"] as? [[String: Any]])?.first?["text"] as? String ?? ""
                 
-                let newItem = ConversationItem(id: itemId, role: role, text: text)
+                let newItem = OutspeedSDK.ConversationItem(id: itemId, role: role, text: text)
                 conversationMap[itemId] = newItem
                 if role == "assistant" || role == "user" {
                     // Create a safe copy of the conversation array to prevent concurrent modification

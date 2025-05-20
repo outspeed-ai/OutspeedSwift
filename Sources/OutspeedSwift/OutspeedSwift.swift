@@ -20,6 +20,37 @@ public class OutspeedSDK : ObservableObject {
         #endif
     }
 
+    public enum Role: String {
+    case user
+    case ai
+    }
+
+
+    public enum Mode: String {
+        case speaking
+        case listening
+    }
+
+    public struct ConversationItem: Identifiable {
+        public let id: String       // item_id from the JSON
+        public let role: String     // "user" / "assistant"
+        public var text: String     // transcript
+
+        public init(id: String, role: String, text: String) {
+            self.id = id
+            self.role = role
+            self.text = text
+        }
+        
+        public var roleSymbol: String {
+            role.lowercased() == "user" ? "person.fill" : "sparkles"
+        }
+        
+        public var roleColor: Color {
+            role.lowercased() == "user" ? .blue : .purple
+        }
+    }
+
     public enum Status: String {
         case connecting
         case connected
