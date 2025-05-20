@@ -1,24 +1,24 @@
 import Foundation
 
-struct Property: Codable {
+struct Property: Codable, Sendable {
     var description: String?
     var type: String
 }
 
-struct Parameters: Codable {
+struct Parameters: Codable, Sendable {
     var type: String
     var properties: [String: Property]
     var required: [String]
 }
 
-struct Tool: Codable {
+struct Tool: Codable, Sendable {
     var type: String // "function"
     var name: String
     var description: String?
     var parameters: Parameters
 }
 
-struct SessionConfig: Codable {
+struct SessionConfig: Codable, Sendable {
     // Model can be one of three values
     var model: String // "Orpheus-3b" | "gpt-4o-realtime-preview-2024-12-17" | "gpt-4o-mini-realtime-preview-2024-12-17"
     
