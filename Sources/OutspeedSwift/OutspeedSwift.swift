@@ -3,9 +3,9 @@ import Combine
 import Foundation
 import os.log
 import WebRTC
-
+import SwiftUI
 /// Main class for OutspeedSwift package
-public class OutspeedSDK {
+public class OutspeedSDK : ObservableObject {
     public static let version = "0.0.1"
 
     private enum Constants {
