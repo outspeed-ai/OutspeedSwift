@@ -1,5 +1,6 @@
 import SwiftUI
 import AVFoundation
+import OutspeedSwift
 
 let OPENAI_API_KEY = ""
 let OUTSPEED_API_KEY = ""
@@ -50,7 +51,6 @@ struct ContentView: View {
             
             MessageInputView()
         }
-        .onAppear(perform: requestMicrophonePermission)
         .sheet(isPresented: $showOptionsSheet) {
             OptionsView(
                 openaiApiKey: $openaiApiKey,
@@ -65,14 +65,6 @@ struct ContentView: View {
         }
     }
     
-    private func requestMicrophonePermission() {
-        AVAudioSession.sharedInstance().requestRecordPermission { granted in
-            print("Microphone permission granted: \(granted)")
-        }
-        if currentApiKey.isEmpty {
-            showOptionsSheet = true
-        }
-    }
     
     @ViewBuilder
     private func HeaderView() -> some View {
