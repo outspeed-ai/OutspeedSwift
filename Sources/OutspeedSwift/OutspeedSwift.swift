@@ -566,8 +566,6 @@ public class OutspeedSDK {
             self.connection = connection
             self.callbacks = callbacks
 
-            setupWebSocket()
-            setupAudioProcessing()
             setupInputVolumeMonitoring()
         }
 
@@ -590,40 +588,6 @@ public class OutspeedSDK {
             return conversation
         }
 
-        private func setupWebSocket() {
-            callbacks.onConnect(connection.conversationId)
-            updateStatus(.connected)
-
-            // Configure WebSocket for larger messages if possible
-            if let urlSessionTask = connection.socket as? URLSessionWebSocketTask {
-                if #available(iOS 15.0, macOS 12.0, *) {
-                    urlSessionTask.maximumMessageSize = Constants.maxRequestedMessageSize
-                }
-            }
-
-            receiveMessages()
-        }
-
-        private func receiveMessages() {
-            connection.socket.receive { [weak self] result in
-                guard let self = self else { return }
-
-                switch result {
-                case let .success(message):
-
-                    self.handleWebSocketMessage(message)
-                case let .failure(error):
-                    self.logger.error("WebSocket error: \(error.localizedDescription)")
-                    self.callbacks.onError("WebSocket error", error)
-                    self.endSession()
-                }
-
-                if self.status == .connected {
-                    self.receiveMessages()
-                }
-            }
-        }
-
         public var conversationVolume: Float {
             get {
                 return volume
@@ -634,163 +598,6 @@ public class OutspeedSDK {
             }
         }
 
-        private func handleWebSocketMessage(_ message: URLSessionWebSocketTask.Message) {
-            switch message {
-            case let .string(text):
-
-                guard let data = text.data(using: .utf8),
-                      let json = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
-                      let type = json["type"] as? String
-                else {
-                    callbacks.onError("Invalid message format", nil)
-                    return
-                }
-
-                switch type {
-                case "client_tool_call":
-                    handleClientToolCall(json)
-
-                case "interruption":
-                    handleInterruptionEvent(json)
-
-                case "agent_response":
-                    handleAgentResponseEvent(json)
-
-                case "user_transcript":
-                    handleUserTranscriptEvent(json)
-
-                case "audio":
-                    handleAudioEvent(json)
-
-                case "ping":
-                    handlePingEvent(json)
-
-                case "internal_tentative_agent_response":
-                    break
-
-                case "internal_vad_score":
-                    break
-
-                case "internal_turn_probability":
-                    break
-
-                default:
-                    callbacks.onError("Unknown message type", json)
-                }
-
-            case .data:
-                callbacks.onError("Received unexpected binary message", nil)
-
-            @unknown default:
-                callbacks.onError("Received unknown message type", nil)
-            }
-        }
-
-        private func handleClientToolCall(_ json: [String: Any]) {
-            guard let toolCall = json["client_tool_call"] as? [String: Any],
-                  let toolName = toolCall["tool_name"] as? String,
-                  let toolCallId = toolCall["tool_call_id"] as? String,
-                  let parameters = toolCall["parameters"] as? [String: Any]
-            else {
-                callbacks.onError("Invalid client tool call format", json)
-                return
-            }
-
-            // Serialize parameters to JSON Data for thread-safety
-            let serializedParameters: Data
-            do {
-                serializedParameters = try JSONSerialization.data(withJSONObject: parameters, options: [])
-            } catch {
-                callbacks.onError("Failed to serialize parameters", error)
-                return
-            }
-
-            // Execute in a Task (now safe because of serializedParameters)
-            Task { [toolName, toolCallId, serializedParameters] in
-                do {
-                    // Deserialize within the Task to pass into clientTools.handle
-                    let deserializedParameters = try JSONSerialization.jsonObject(with: serializedParameters) as? [String: Any] ?? [:]
-
-                    let result = try await clientTools?.handle(toolName, parameters: deserializedParameters)
-
-                    let response: [String: Any] = [
-                        "type": "client_tool_result",
-                        "tool_call_id": toolCallId,
-                        "result": result ?? "",
-                        "is_error": false,
-                    ]
-                    sendWebSocketMessage(response)
-                } catch {
-                    let response: [String: Any] = [
-                        "type": "client_tool_result",
-                        "tool_call_id": toolCallId,
-                        "result": error.localizedDescription,
-                        "is_error": true,
-                    ]
-                    sendWebSocketMessage(response)
-                }
-            }
-        }
-
-        private func handleInterruptionEvent(_ json: [String: Any]) {
-            guard let event = json["interruption_event"] as? [String: Any],
-                  let eventId = event["event_id"] as? Int else { return }
-
-            lastInterruptTimestamp = eventId
-            fadeOutAudio()
-
-            // Clear the audio buffers and stop playback
-            clearAudioBuffers()
-            stopPlayback()
-        }
-
-        private func handleAgentResponseEvent(_ json: [String: Any]) {
-            guard let event = json["agent_response_event"] as? [String: Any],
-                  let response = event["agent_response"] as? String else { return }
-            callbacks.onMessage(response, .ai)
-        }
-
-        private func handleUserTranscriptEvent(_ json: [String: Any]) {
-            guard let event = json["user_transcription_event"] as? [String: Any],
-                  let transcript = event["user_transcript"] as? String else { return }
-            callbacks.onMessage(transcript, .user)
-        }
-
-        private func handleAudioEvent(_ json: [String: Any]) {
-            guard let event = json["audio_event"] as? [String: Any],
-                  let audioBase64 = event["audio_base_64"] as? String,
-                  let eventId = event["event_id"] as? Int,
-                  lastInterruptTimestamp <= eventId else { return }
-
-            // Check if we need to split the audio chunk for WebSocket size limits
-            if audioBase64.utf8.count > Constants.maxWebSocketMessageSize {
-                // Split the base64 string into multiple parts to process separately
-                let chunkSize = Constants.safeMessageSize
-                var offset = 0
-
-                while offset < audioBase64.count {
-                    let endIndex = min(offset + chunkSize, audioBase64.count)
-                    let startIndex = audioBase64.index(audioBase64.startIndex, offsetBy: offset)
-                    let endStringIndex = audioBase64.index(audioBase64.startIndex, offsetBy: endIndex)
-                    let subChunk = String(audioBase64[startIndex ..< endStringIndex])
-
-                    addAudioBase64Chunk(subChunk)
-                    offset = endIndex
-                }
-            } else {
-                // Process the whole chunk
-                addAudioBase64Chunk(audioBase64)
-            }
-
-            updateMode(.speaking)
-        }
-
-        private func handlePingEvent(_ json: [String: Any]) {
-            guard let event = json["ping_event"] as? [String: Any],
-                  let eventId = event["event_id"] as? Int else { return }
-            let response: [String: Any] = ["type": "pong", "event_id": eventId]
-            sendWebSocketMessage(response)
-        }
 
         private func sendWebSocketMessage(_ message: [String: Any]) {
             guard let data = try? JSONSerialization.data(withJSONObject: message),
@@ -808,52 +615,6 @@ public class OutspeedSDK {
             }
         }
 
-        private func setupAudioProcessing() {
-            input.setRecordCallback { [weak self] buffer, rms in
-                guard let self = self, self.isProcessingInput else { return }
-
-                // Convert buffer data to base64 string
-                if let int16ChannelData = buffer.int16ChannelData {
-                    let frameLength = Int(buffer.frameLength)
-                    let totalBytes = frameLength * MemoryLayout<Int16>.size
-
-                    // If buffer is small enough, send in one chunk
-                    if totalBytes <= Constants.safeMessageSize {
-                        let data = Data(bytes: int16ChannelData[0], count: totalBytes)
-                        let base64String = data.base64EncodedString()
-                        let message: [String: Any] = ["type": "user_audio_chunk", "user_audio_chunk": base64String]
-                        self.sendWebSocketMessage(message)
-                    } else {
-                        // Split into smaller chunks
-                        let framesPerChunk = Constants.safeMessageSize / MemoryLayout<Int16>.size
-                        var frameOffset = 0
-
-                        while frameOffset < frameLength {
-                            let framesInChunk = min(framesPerChunk, frameLength - frameOffset)
-                            let bytesInChunk = framesInChunk * MemoryLayout<Int16>.size
-
-                            let chunkData = Data(bytes: int16ChannelData[0].advanced(by: frameOffset), count: bytesInChunk)
-                            let base64String = chunkData.base64EncodedString()
-
-                            let message: [String: Any] = ["type": "user_audio_chunk", "user_audio_chunk": base64String]
-                            self.sendWebSocketMessage(message)
-
-                            frameOffset += framesInChunk
-                        }
-                    }
-                } else {
-                    self.logger.error("Failed to get int16 channel data")
-                }
-
-                // Update volume level
-                self.currentInputVolume = rms
-
-                // Notify volume changes
-                DispatchQueue.main.async {
-                    self.callbacks.onVolumeUpdate(rms)
-                }
-            }
-        }
 
         private func updateVolume(_ buffer: AVAudioPCMBuffer) {
             guard let channelData = buffer.floatChannelData else { return }
@@ -875,41 +636,6 @@ public class OutspeedSDK {
             currentInputVolume = max(0, min(1, (meterLevel + 50) / 50))
         }
 
-        private func scheduleNextBuffer() {
-            output.audioQueue.async { [weak self] in
-                guard let self = self else { return }
-
-                let buffer: AVAudioPCMBuffer? = self.audioBufferLock.withLock {
-                    self.audioBuffers.isEmpty ? nil : self.audioBuffers.removeFirst()
-                }
-
-                guard let audioBuffer = buffer else { return }
-
-                self.output.playerNode.scheduleBuffer(audioBuffer) {
-                    self.scheduleNextBuffer()
-                }
-                if !self.output.playerNode.isPlaying {
-                    self.output.playerNode.play()
-                }
-            }
-        }
-
-        private func fadeOutAudio() {
-            // Mute agent
-            updateMode(.listening)
-
-            // Fade out the volume
-            let fadeOutDuration: TimeInterval = 2.0
-            output.mixer.volume = volume
-            output.mixer.volume = 0.0001
-
-            // Reset volume back after 2 seconds
-            DispatchQueue.main.asyncAfter(deadline: .now() + fadeOutDuration) { [weak self] in
-                guard let self = self else { return }
-                self.output.mixer.volume = self.volume
-                self.clearAudioBuffers()
-            }
-        }
 
         private func updateMode(_ newMode: Mode) {
             guard mode != newMode else { return }
@@ -936,11 +662,7 @@ public class OutspeedSDK {
         public func endSession() {
             guard status == .connected else { return }
 
-            updateStatus(.disconnecting)
-            connection.close()
-            input.close()
-            output.close()
-            updateStatus(.disconnected)
+            connection.stopConnection()
 
             DispatchQueue.main.async {
                 self.inputVolumeUpdateTimer?.invalidate()
@@ -976,19 +698,6 @@ public class OutspeedSDK {
             isProcessingInput = false
         }
 
-        private func clearAudioBuffers() {
-            audioBufferLock.withLock {
-                audioBuffers.removeAll()
-            }
-            audioConcatProcessor.handleMessage(["type": "clearInterrupted"])
-        }
-
-        private func stopPlayback() {
-            output.audioQueue.async { [weak self] in
-                guard let self = self else { return }
-                self.output.playerNode.stop()
-            }
-        }
     }
 
     // MARK: - Errors
@@ -1023,63 +732,6 @@ public class OutspeedSDK {
             case .unknownMessageType:
                 return "Received an unknown message type."
             }
-        }
-    }
-
-
-    // MARK: - Private Methods
-    
-    private static func setupPeerConnection() {
-        let config = RTCConfiguration()
-        // Configure ICE servers with public STUN servers
-        config.iceServers = [
-            RTCIceServer(urlStrings: ["stun:stun.l.google.com:19302"]),
-            RTCIceServer(urlStrings: ["stun:stun1.l.google.com:19302"])
-        ]
-        let constraints = RTCMediaConstraints(mandatoryConstraints: nil, optionalConstraints: nil)
-        let factory = RTCPeerConnectionFactory()
-        peerConnection = factory.peerConnection(with: config, constraints: constraints, delegate: self)
-    }
-
-
-    private static func setupLocalAudio() {
-        guard let peerConnection = peerConnection else { return }
-        let factory = RTCPeerConnectionFactory()
-        
-        let constraints = RTCMediaConstraints(
-            mandatoryConstraints: [
-                "googEchoCancellation": "true",
-                "googAutoGainControl": "true",
-                "googNoiseSuppression": "true",
-                "googHighpassFilter": "true",
-            ],
-            optionalConstraints: nil
-        )
-        
-        let audioSource = factory.audioSource(with: constraints)
-        
-        let localAudioTrack = factory.audioTrack(with: audioSource, trackId: "local_audio")
-        peerConnection.add(localAudioTrack, streamIds: ["local_stream"])
-        audioTrack = localAudioTrack
-    }
-
-    // MARK: - Audio Session Configuration
-
-    private static func configureAudioSession() throws {
-        let audioSession = AVAudioSession.sharedInstance()
-        let logger = Logger(subsystem: "com.outspeed.OutspeedSwift", category: "AudioSession")
-
-        do {
-            try audioSession.setCategory(.playAndRecord, options: [.defaultToSpeaker, .allowBluetooth])
-            try audioSession.setMode(.voiceChat)  // Changed from videoChat to voiceChat for better voice optimization
-            try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
-
-            logger.info("Audio session configured and activated.")
-
-        } catch {
-            logger.error("Failed to configure audio session: \(error.localizedDescription)")
-            print("OutspeedSwift: Failed to configure audio session: \(error.localizedDescription)")
-            throw error
         }
     }
 }
