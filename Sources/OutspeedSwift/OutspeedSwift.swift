@@ -554,7 +554,7 @@ public class OutspeedSDK {
             try OutspeedSDK.configureAudioSession()
 
             // Step 2: Create the WebRTC manager
-            let webRTCManager = WebRTCManager()
+            let webRTCManager = WebRTCManager(apiKey: config.apiKey )
             
             // Step 3: Create the WebRTC connection
             let connection = try await Connection.create(config: config)

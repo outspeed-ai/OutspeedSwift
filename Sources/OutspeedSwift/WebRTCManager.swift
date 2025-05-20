@@ -47,6 +47,13 @@ class WebRTCManager: NSObject, ObservableObject {
     
     // Flag to track if a layout update is in progress
     private var isUpdatingUI = false
+    private var currentApiKey: String
+    
+    init(apiKey: String) {
+        self.currentApiKey = apiKey
+        super.init()
+    }
+    
     
     // MARK: - Public Methods
     
@@ -54,9 +61,6 @@ class WebRTCManager: NSObject, ObservableObject {
     private func requestMicrophonePermission() {
         AVAudioSession.sharedInstance().requestRecordPermission { granted in
             print("Microphone permission granted: \(granted)")
-        }
-        if currentApiKey.isEmpty {
-            showOptionsSheet = true
         }
     }
     /// Start a WebRTC connection using a standard API key for local testing.
