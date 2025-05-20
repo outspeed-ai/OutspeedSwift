@@ -123,7 +123,7 @@ public class OutspeedSDK {
         public let customLlmExtraBody: [String: LlmExtraBodyValue]?
         public let dynamicVariables: [String: DynamicVariableValue]?
 
-        public init(signedUrl: String, overrides: ConversationConfigOverride? = nil, customLlmExtraBody: [String: LlmExtraBodyValue]? = nil, clientTools _: ClientTools = ClientTools(), dynamicVariables: [String: DynamicVariableValue]? = nil) {
+        public init(signedUrl: String, overrides: ConversationConfigOverride? = nil, customLlmExtraBody: [String: LlmExtraBodyValue]? = nil, dynamicVariables: [String: DynamicVariableValue]? = nil) {
             self.signedUrl = signedUrl
             agentId = nil
             self.overrides = overrides
@@ -131,7 +131,7 @@ public class OutspeedSDK {
             self.dynamicVariables = dynamicVariables
         }
 
-        public init(agentId: String, overrides: ConversationConfigOverride? = nil, customLlmExtraBody: [String: LlmExtraBodyValue]? = nil, clientTools _: ClientTools = ClientTools(), dynamicVariables: [String: DynamicVariableValue]? = nil) {
+        public init(agentId: String, overrides: ConversationConfigOverride? = nil, customLlmExtraBody: [String: LlmExtraBodyValue]? = nil, dynamicVariables: [String: DynamicVariableValue]? = nil) {
             self.agentId = agentId
             signedUrl = nil
             self.overrides = overrides
@@ -562,7 +562,7 @@ public class OutspeedSDK {
             }
         }
 
-        private init(connection: Connection, callbacks: Callbacks) {
+        private init(connection: WebRTCManager, callbacks: Callbacks) {
             self.connection = connection
             self.callbacks = callbacks
 
@@ -586,16 +586,6 @@ public class OutspeedSDK {
             let conversation = Conversation(connection: connection, callbacks: callbacks)
 
             return conversation
-        }
-
-        public var conversationVolume: Float {
-            get {
-                return volume
-            }
-            set {
-                volume = newValue
-                output.mixer.volume = newValue
-            }
         }
 
 
@@ -682,11 +672,6 @@ public class OutspeedSDK {
             0
         }
 
-        /// Retrieves the output volume
-        /// - Returns: Current output volume
-        public func getOutputVolume() -> Float {
-            output.mixer.volume
-        }
 
         /// Starts recording audio input
         public func startRecording() {
