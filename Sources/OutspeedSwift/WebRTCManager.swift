@@ -79,7 +79,7 @@ class WebRTCManager: NSObject, ObservableObject {
     // Flag to track if a layout update is in progress
     private var isUpdatingUI = false
     private var callbacks = Callbacks()
-    private var conversationId: String = ""
+    public var conversationId: String = ""
     
     // MARK: - Public Properties
     // MARK: - Public Methods

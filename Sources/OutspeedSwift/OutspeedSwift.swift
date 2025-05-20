@@ -326,22 +326,6 @@ public class OutspeedSDK {
         }
 
 
-        private func sendWebSocketMessage(_ message: [String: Any]) {
-            guard let data = try? JSONSerialization.data(withJSONObject: message),
-                  let string = String(data: data, encoding: .utf8)
-            else {
-                callbacks.onError("Failed to encode message", message)
-                return
-            }
-
-            connection.socket.send(.string(string)) { [weak self] error in
-                if let error = error {
-                    self?.logger.error("Failed to send WebSocket message: \(error.localizedDescription)")
-                    self?.callbacks.onError("Failed to send WebSocket message", error)
-                }
-            }
-        }
-
 
         private func updateVolume(_ buffer: AVAudioPCMBuffer) {
             guard let channelData = buffer.floatChannelData else { return }
@@ -376,14 +360,33 @@ public class OutspeedSDK {
             callbacks.onStatusChange(newStatus)
         }
 
-        /// Send a contextual update event
-        public func sendContextualUpdate(_ text: String) {
-            let event: [String: Any] = [
-                "type": "contextual_update",
-                "text": text
-            ]
-            sendWebSocketMessage(event)
-        }
+
+        // TODO: Implement this
+        // private func sendWebSocketMessage(_ message: [String: Any]) {
+        //     guard let data = try? JSONSerialization.data(withJSONObject: message),
+        //           let string = String(data: data, encoding: .utf8)
+        //     else {
+        //         callbacks.onError("Failed to encode message", message)
+        //         return
+        //     }
+
+        //     connection.socket.send(.string(string)) { [weak self] error in
+        //         if let error = error {
+        //             self?.logger.error("Failed to send WebSocket message: \(error.localizedDescription)")
+        //             self?.callbacks.onError("Failed to send WebSocket message", error)
+        //         }
+        //     }
+        // }
+
+
+        // /// Send a contextual update event
+        // public func sendContextualUpdate(_ text: String) {
+        //     let event: [String: Any] = [
+        //         "type": "contextual_update",
+        //         "text": text
+        //     ]
+        //     sendWebSocketMessage(event)
+        // }
 
         /// Ends the current conversation session
         public func endSession() {
