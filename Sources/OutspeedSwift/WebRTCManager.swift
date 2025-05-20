@@ -127,14 +127,14 @@ class WebRTCManager: NSObject, ObservableObject {
             guard let self = self,
                   let sdp = sdp,
                   error == nil else {
-                self.callbacks.onError("Failed to create offer: \(String(describing: error))", nil)
+                self?.callbacks.onError("Failed to create offer: \(String(describing: error))", nil)
                 print("Failed to create offer: \(String(describing: error))")
                 return
             }
             // Set local description
             peerConnection.setLocalDescription(sdp) { [weak self] error in
                 guard let self = self, error == nil else {
-                    self.callbacks.onError("Failed to set local description: \(String(describing: error))", nil)
+                    self?.callbacks.onError("Failed to set local description: \(String(describing: error))", nil)
                     print("Failed to set local description: \(String(describing: error))")
                     return
                 }
