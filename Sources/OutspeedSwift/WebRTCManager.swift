@@ -718,7 +718,7 @@ public class WebRTCManager: NSObject, ObservableObject {
     }
     
 
-    func peerConnection(_ peerConnection: RTCPeerConnection, didGenerate candidate: RTCIceCandidate) {
+    public func peerConnection(_ peerConnection: RTCPeerConnection, didGenerate candidate: RTCIceCandidate) {
         print("[Outspeed] didGenerate candidate: \(candidate.sdp)")
         if provider == .outspeed {
             if let webSocket = outspeedWebSocket, webSocket.state == .running {
