@@ -4,6 +4,10 @@ import Foundation
 import AVFoundation
 import SwiftUI
 
+import os
+
+let logger = Logger(subsystem: "com.outspeed.outspeed-swift", category: "WebRTCManager")    
+
 public enum Role: String {
     case user
     case ai
@@ -105,6 +109,8 @@ public class WebRTCManager: NSObject, ObservableObject {
                 return
             }
         }
+
+        print("Using API key: \(apiKey ?? "Not provided")")
 
         conversation.removeAll()
         conversationMap.removeAll()
@@ -728,13 +734,13 @@ public class WebRTCManager: NSObject, ObservableObject {
     
 
     public func peerConnection(_ peerConnection: RTCPeerConnection, didGenerate candidate: RTCIceCandidate) {
-        print("[Outspeed] didGenerate candidate: \(candidate.sdp)")
+        logger.debug("[Outspeed] didGenerate candidate: \(candidate.sdp)")
         if provider == .outspeed {
             if let webSocket = outspeedWebSocket, webSocket.state == .running {
                 sendIceCandidate(candidate)
             } else {
                 // Buffer the candidate for later
-                print("[Outspeed] WebSocket not ready, buffering ICE candidate")
+                logger.debug("[Outspeed] WebSocket not ready, buffering ICE candidate")
                 pendingIceCandidates.append(candidate)
             }
         }
@@ -743,7 +749,7 @@ public class WebRTCManager: NSObject, ObservableObject {
     // Helper method to send a single ICE candidate
     private func sendIceCandidate(_ candidate: RTCIceCandidate) {
         guard let webSocket = outspeedWebSocket, webSocket.state == .running else {
-            print("[Outspeed] WebSocket not available, cannot send ICE candidate")
+            logger.debug("[Outspeed] WebSocket not available, cannot send ICE candidate")
             return
         }
         
@@ -761,27 +767,26 @@ public class WebRTCManager: NSObject, ObservableObject {
         // Send to the WebSocket server
         guard let candidateData = try? JSONSerialization.data(withJSONObject: candidateMessage),
               let candidateString = String(data: candidateData, encoding: .utf8) else {
-            print("[Outspeed] Failed to serialize ICE candidate")
+            logger.error("[Outspeed] Failed to serialize ICE candidate")
             return
         }
         
-        print("[Outspeed] Sending ICE candidate: \(candidateString)")
+        logger.debug("[Outspeed] Sending ICE candidate: \(candidateString)")
         webSocket.send(.string(candidateString)) { error in
             if let error {
                 localCallbacks.onError("Failed to send ICE candidate: \(error)", nil)
-                print("[Outspeed] Failed to send ICE candidate: \(error)")
+                logger.error("[Outspeed] Failed to send ICE candidate: \(error)")
             }
         }
     }
     
     // Helper method to send all pending ICE candidates
     private func sendPendingIceCandidates() {
-        print("[Outspeed] Sending \(pendingIceCandidates.count) buffered ICE candidates")
+        logger.debug("[Outspeed] Sending buffered ICE candidates")
         guard !pendingIceCandidates.isEmpty else {
             return
         }
         
-        print("[Outspeed] Sending \(pendingIceCandidates.count) buffered ICE candidates")
         for candidate in pendingIceCandidates {
             sendIceCandidate(candidate)
         }
@@ -836,7 +841,7 @@ extension WebRTCManager: RTCPeerConnectionDelegate {
         @unknown default:
             stateName = "unknown"
         }
-        print("ICE Connection State changed to: \(stateName)")
+        logger.info("ICE Connection State changed to: \(stateName)")
     }
     
     public func peerConnection(_ peerConnection: RTCPeerConnection, didChange newState: RTCIceGatheringState) {}
@@ -852,7 +857,7 @@ extension WebRTCManager: RTCPeerConnectionDelegate {
 // MARK: - RTCDataChannelDelegate
 extension WebRTCManager: RTCDataChannelDelegate {
     public func dataChannelDidChangeState(_ dataChannel: RTCDataChannel) {
-        print("Data channel state changed: \(dataChannel.readyState)")
+        logger.info("Data channel state changed: \(String(describing: dataChannel.readyState))")
         // Auto-send session.update after channel is open
         if dataChannel.readyState == .open {
             Task { @MainActor [weak self] in
