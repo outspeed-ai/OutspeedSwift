@@ -292,8 +292,8 @@ public class WebRTCManager: NSObject, ObservableObject {
         
         do {
             let audioSession = AVAudioSession.sharedInstance()
-            try audioSession.setCategory(.playAndRecord, options: [.defaultToSpeaker, .allowBluetooth])
-            try audioSession.setMode(.voiceChat)  // Changed from videoChat to voiceChat for better voice optimization
+            try audioSession.setCategory(.playAndRecord, mode: .voiceChat, options: [.defaultToSpeaker, .allowBluetooth])
+            try audioSession.overrideOutputAudioPort(.speaker) // because some phones might not respect .defaultToSpeaker option & play through earpiece
             try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
         } catch {
             print("Failed to configure AVAudioSession: \(error)")
