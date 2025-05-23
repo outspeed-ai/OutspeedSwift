@@ -12,12 +12,12 @@ import UIKit
 public class OutspeedSDK : ObservableObject {
     public static let version: String = "0.0.2"
     public init() {
-        #if os(iOS)
-        // Prevent usage on iOS versions newer than 18.3.1
-        if #available(iOS 18.4, *) {
-            fatalError("This build is not intended for iOS versions after 18.3.1")
-        }
-        #endif
+        // #if os(iOS)
+        // // Prevent usage on iOS versions newer than 18.3.1
+        // if #available(iOS 18.4, *) {
+        //     fatalError("This build is not intended for iOS versions after 18.3.1")
+        // }
+        // #endif
     }
 
     public enum Role: String {
@@ -298,13 +298,13 @@ public class OutspeedSDK : ObservableObject {
         /// - Returns: A started `Conversation` instance
         public static func startSession(config: SessionConfig, callbacks: Callbacks = Callbacks(), apiKey: String?, provider: Provider = .outspeed) async throws -> Conversation {
             // Step 2: Create the WebSocket connection
-            #if os(iOS)
-            // Prevent usage on iOS versions newer than 18.3.1
-            if #available(iOS 18.4, *) {
-                print("OutspeedSwift build is not intended for iOS versions after 18.3.1")
-                fatalError("OutspeedSwift build is not intended for iOS versions after 18.3.1")
-            }
-            #endif
+            // #if os(iOS)
+            // // Prevent usage on iOS versions newer than 18.3.1
+            // if #available(iOS 18.4, *) {
+            //     print("OutspeedSwift build is not intended for iOS versions after 18.3.1")
+            //     fatalError("OutspeedSwift build is not intended for iOS versions after 18.3.1")
+            // }
+            // #endif
 
 
             let connection = WebRTCManager()
