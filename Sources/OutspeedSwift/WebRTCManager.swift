@@ -77,18 +77,21 @@ public class WebRTCManager: NSObject, ObservableObject {
         }
 
         // Create a Data Channel for sending/receiving events
-        let config = RTCDataChannelConfiguration()
-        if let channel = peerConnection.dataChannel(forLabel: "oai-events", configuration: config) {
+        if let channel = peerConnection.dataChannel(
+            forLabel: "oai-events", configuration: RTCDataChannelConfiguration())
+        {
             dataChannel = channel
             dataChannel?.delegate = self
         }
+
+        let systemInstructions = config.overrides?.agent?.prompt?.prompt
 
         // Create an SDP offer
         let constraints = RTCMediaConstraints(
             mandatoryConstraints: ["levelControl": "true"],
             optionalConstraints: nil
         )
-        peerConnection.offer(for: constraints) { [weak self] sdp, error in
+        peerConnection.offer(for: constraints) { [weak self] (sdp, error) in
             guard let self = self,
                 let sdp = sdp,
                 error == nil
@@ -138,7 +141,7 @@ public class WebRTCManager: NSObject, ObservableObject {
                         case .outspeed:
                             // First get ephemeral key
                             let ephemeralKey = try await self?.getEphemeralKeyOutspeed(
-                                apiKey: apiKey)
+                                apiKey: apiKey, instructions: systemInstructions)
                             if let ephemeralKey = ephemeralKey {
                                 // Then establish WebRTC connection
                                 try await self?.fetchRemoteSDPOutspeed(
@@ -239,7 +242,7 @@ public class WebRTCManager: NSObject, ObservableObject {
                 "type": "session.update",
                 "session": [
                     "modalities": ["text", "audio"],  // Enable both text and audio
-                    "instructions": systemInstructions,
+                    //                    "instructions": systemInstructions,
                     "voice": "tara",
                     "input_audio_transcription": [
                         "model": provider == .openai ? "whisper-1" : "whisper-v3-turbo"
@@ -255,7 +258,7 @@ public class WebRTCManager: NSObject, ObservableObject {
                 "type": "session.update",
                 "session": [
                     "modalities": ["text", "audio"],  // Enable both text and audio
-                    "instructions": systemInstructions,
+                    //                    "instructions": systemInstructions,
                     "voice": voice,
                     "input_audio_transcription": [
                         "model": provider == .openai ? "whisper-1" : "whisper-v3-turbo"
@@ -350,11 +353,12 @@ public class WebRTCManager: NSObject, ObservableObject {
     }
 
     /// Get ephemeral key from Outspeed server
-    private func getEphemeralKeyOutspeed(apiKey: String) async throws -> String {
+    private func getEphemeralKeyOutspeed(apiKey: String, instructions: String? = nil) async throws
+        -> String
+    {
         let outspeed_url =
             ProcessInfo.processInfo.environment["OUTSPEED_API_URL"] ?? provider.baseURL
-        let baseUrl = "https://\(outspeed_url)/v1/realtime/sessions"
-        guard let url = URL(string: baseUrl) else {
+        guard let url = URL(string: "https://\(outspeed_url)/v1/realtime/sessions") else {
             throw URLError(.badURL)
         }
 
@@ -369,7 +373,7 @@ public class WebRTCManager: NSObject, ObservableObject {
             sessionConfig = [
                 "model": "Orpheus-3b",
                 "modalities": ["text", "audio"],
-                "instructions": systemInstructions,
+                "instructions": instructions ?? Provider.outspeed.defaultSystemMessage,
                 "voice": "tara",
                 "input_audio_format": "pcm16",
                 "output_audio_format": "pcm16",
@@ -385,7 +389,7 @@ public class WebRTCManager: NSObject, ObservableObject {
             sessionConfig = [
                 "model": modelName,
                 "modalities": ["text", "audio"],
-                "instructions": systemInstructions,
+                "instructions": instructions ?? Provider.outspeed.defaultSystemMessage,
                 "voice": voice,
                 "input_audio_format": "pcm16",
                 "output_audio_format": "pcm16",

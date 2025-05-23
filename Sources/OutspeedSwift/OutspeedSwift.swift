@@ -91,7 +91,7 @@ public class OutspeedSDK: ObservableObject {
     public struct AgentPrompt: Codable, Sendable {
         var prompt: String?
 
-        init(prompt: String? = nil) {
+        public init(prompt: String? = nil) {
             self.prompt = prompt
         }
     }
@@ -189,25 +189,26 @@ public class OutspeedSDK: ObservableObject {
             dynamicVariables: [String: DynamicVariableValue]? = nil
         ) {
             print(
-                "signedUrl, overrides, customLlmExtraBody, and dynamicVariables are not yet supported by OutspeedSwift. Ignoring them."
+                "signedUrl, customLlmExtraBody, and dynamicVariables are not yet supported by OutspeedSwift. Ignoring them."
             )
             self.signedUrl = signedUrl
-            agentId = nil
+            self.agentId = nil
             self.overrides = overrides
             self.customLlmExtraBody = customLlmExtraBody
             self.dynamicVariables = dynamicVariables
         }
 
         public init(
-            agentId: String, overrides: ConversationConfigOverride? = nil,
+            agentId: String,
+            overrides: ConversationConfigOverride? = nil,
             customLlmExtraBody: [String: LlmExtraBodyValue]? = nil,
             dynamicVariables: [String: DynamicVariableValue]? = nil
         ) {
             print(
-                "agentId, overrides, customLlmExtraBody, and dynamicVariables are not yet supported by OutspeedSwift. Ignoring them."
+                "agentId, customLlmExtraBody, and dynamicVariables are not yet supported by OutspeedSwift. Ignoring them."
             )
             self.agentId = agentId
-            signedUrl = nil
+            self.signedUrl = nil
             self.overrides = overrides
             self.customLlmExtraBody = customLlmExtraBody
             self.dynamicVariables = dynamicVariables
@@ -314,10 +315,11 @@ public class OutspeedSDK: ObservableObject {
         ///   - apiKey: API key for the conversation
         /// - Returns: A started `Conversation` instance
         public static func startSession(
-            config: SessionConfig, callbacks: Callbacks = Callbacks(), apiKey: String?,
+            config: SessionConfig,
+            callbacks: Callbacks = Callbacks(),
+            apiKey: String?,
             provider: Provider = .outspeed
         ) async throws -> Conversation {
-            // Step 2: Create the WebSocket connection
             #if os(iOS)
                 // Prevent usage on iOS versions newer than 18.3.1
                 if #available(iOS 18.4, *) {
@@ -336,8 +338,7 @@ public class OutspeedSDK: ObservableObject {
                         nil)
                     throw OutspeedError.invalidConfiguration
                 }
-            }
-            if provider == .openai {
+            } else if provider == .openai {
                 guard let apiKey = apiKey ?? ProcessInfo.processInfo.environment["OPENAI_API_KEY"]
                 else {
                     callbacks.onError(
@@ -352,6 +353,7 @@ public class OutspeedSDK: ObservableObject {
             if callbacks.onModeChange != nil {
                 print("onModeChange is not supported by OutspeedSwift. Ignoring it.")
             }
+
             if callbacks.onVolumeUpdate != nil {
                 print("onVolumeUpdate is not supported by OutspeedSwift. Ignoring it.")
             }
