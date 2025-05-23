@@ -382,20 +382,21 @@ public class WebRTCManager: NSObject, ObservableObject {
 
         self.logCurrentAudioRoute()
 
+    }
+
+    private func overrideOutputAudioPort() {
+        guard let audioSession = self.audioSession else {
+            logger.error("overrideOutputAudioPort(): Failed to get audio session")
+            return
+        }
+
         // some phones might not respect .defaultToSpeaker option & play through earpiece
-        // delay so that session is r
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            do {
-                try audioSession.overrideOutputAudioPort(.speaker)
-                logger.info("Successfully overridden output audio port to speaker.")
-                self.logCurrentAudioRoute()
-            } catch {
-                logger.error(
-                    "Failed to override output audio port to speaker: \(error.localizedDescription)"
-                )
-                // Optionally trigger onError callback
-                // conversation.callbacks.onError("Failed to set speaker output", error)
-            }
+        do {
+            try audioSession.overrideOutputAudioPort(.speaker)
+            logger.info("Successfully overridden output audio port to speaker.")
+            self.logCurrentAudioRoute()
+        } catch {
+            print("Failed to override output audio port: \(error)")
         }
     }
 
@@ -986,6 +987,7 @@ extension WebRTCManager: RTCDataChannelDelegate {
         // Auto-send session.update after channel is open
         if dataChannel.readyState == .open {
             Task { @MainActor [weak self] in
+                self?.overrideOutputAudioPort()
                 await self?.sendSessionUpdate()
             }
         }
