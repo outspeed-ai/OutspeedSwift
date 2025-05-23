@@ -1,30 +1,27 @@
 import AVFoundation
 import Combine
 import Foundation
-import os.log
-import WebRTC
 import SwiftUI
 import UIKit
-
-
+import WebRTC
+import os.log
 
 /// Main class for OutspeedSwift package
-public class OutspeedSDK : ObservableObject {
+public class OutspeedSDK: ObservableObject {
     public static let version: String = "0.0.2"
     public init() {
         #if os(iOS)
-        // Prevent usage on iOS versions newer than 18.3.1
-        if #available(iOS 18.4, *) {
-            fatalError("This build is not intended for iOS versions after 18.3.1")
-        }
+            // Prevent usage on iOS versions newer than 18.3.1
+            if #available(iOS 18.4, *) {
+                fatalError("This build is not intended for iOS versions after 18.3.1")
+            }
         #endif
     }
 
     public enum Role: String {
-    case user
-    case ai
+        case user
+        case ai
     }
-
 
     public enum Mode: String {
         case speaking
@@ -32,20 +29,20 @@ public class OutspeedSDK : ObservableObject {
     }
 
     public struct ConversationItem: Identifiable {
-        public let id: String       // item_id from the JSON
-        public let role: String     // "user" / "assistant"
-        public var text: String     // transcript
+        public let id: String  // item_id from the JSON
+        public let role: String  // "user" / "assistant"
+        public var text: String  // transcript
 
         public init(id: String, role: String, text: String) {
             self.id = id
             self.role = role
             self.text = text
         }
-        
+
         public var roleSymbol: String {
             role.lowercased() == "user" ? "person.fill" : "sparkles"
         }
-        
+
         public var roleColor: Color {
             role.lowercased() == "user" ? .blue : .purple
         }
@@ -58,18 +55,17 @@ public class OutspeedSDK : ObservableObject {
         case disconnected
     }
 
-
     public struct Callbacks: Sendable {
-    public var onConnect: @Sendable (String) -> Void = { _ in }
-    public var onDisconnect: @Sendable () -> Void = {}
-    public var onMessage: @Sendable (String, Role) -> Void = { _, _ in }
-    public var onError: @Sendable (String, Any?) -> Void = { _, _ in }
-    public var onStatusChange: @Sendable (Status) -> Void = { _ in }
-    public var onModeChange: @Sendable (Mode) -> Void = { _ in }
-    public var onVolumeUpdate: @Sendable (Float) -> Void = { _ in }
+        public var onConnect: @Sendable (String) -> Void = { _ in }
+        public var onDisconnect: @Sendable () -> Void = {}
+        public var onMessage: @Sendable (String, Role) -> Void = { _, _ in }
+        public var onError: @Sendable (String, Any?) -> Void = { _, _ in }
+        public var onStatusChange: @Sendable (Status) -> Void = { _ in }
+        public var onModeChange: @Sendable (Mode) -> Void = { _ in }
+        public var onVolumeUpdate: @Sendable (Float) -> Void = { _ in }
 
-    public init() {}
-}
+        public init() {}
+    }
 
     private enum Constants {
         static let inputSampleRate: Double = 16000
@@ -80,15 +76,16 @@ public class OutspeedSDK : ObservableObject {
         static let bufferSize: AVAudioFrameCount = 1024
 
         // WebSocket message size limits
-        static let maxWebSocketMessageSize = 1024 * 1024 // 1MB WebSocket limit
-        static let safeMessageSize = 750 * 1024 // 750KB - safely under the limit
-        static let maxRequestedMessageSize = 8 * 1024 * 1024 // 8MB - request larger buffer if available
+        static let maxWebSocketMessageSize = 1024 * 1024  // 1MB WebSocket limit
+        static let safeMessageSize = 750 * 1024  // 750KB - safely under the limit
+        static let maxRequestedMessageSize = 8 * 1024 * 1024  // 8MB - request larger buffer if available
     }
 
     // MARK: - Session Config Utilities
 
     public enum Language: String, Codable, Sendable {
-        case en, ja, zh, de, hi, fr, ko, pt, it, es, id, nl, tr, pl, sv, bg, ro, ar, cs, el, fi, ms, da, ta, uk, ru, hu, no, vi
+        case en, ja, zh, de, hi, fr, ko, pt, it, es, id, nl, tr, pl, sv, bg, ro, ar, cs, el, fi, ms,
+            da, ta, uk, ru, hu, no, vi
     }
 
     public struct AgentPrompt: Codable, Sendable {
@@ -132,7 +129,9 @@ public class OutspeedSDK : ObservableObject {
             case language
         }
 
-        public init(prompt: AgentPrompt? = nil, firstMessage: String? = nil, language: Language? = nil) {
+        public init(
+            prompt: AgentPrompt? = nil, firstMessage: String? = nil, language: Language? = nil
+        ) {
             self.prompt = prompt
             self.firstMessage = firstMessage
             self.language = language
@@ -184,8 +183,14 @@ public class OutspeedSDK : ObservableObject {
         let customLlmExtraBody: [String: LlmExtraBodyValue]?
         let dynamicVariables: [String: DynamicVariableValue]?
 
-        public init(signedUrl: String, overrides: ConversationConfigOverride? = nil, customLlmExtraBody: [String: LlmExtraBodyValue]? = nil, dynamicVariables: [String: DynamicVariableValue]? = nil) {
-            print("signedUrl, overrides, customLlmExtraBody, and dynamicVariables are not yet supported by OutspeedSwift. Ignoring them.")
+        public init(
+            signedUrl: String, overrides: ConversationConfigOverride? = nil,
+            customLlmExtraBody: [String: LlmExtraBodyValue]? = nil,
+            dynamicVariables: [String: DynamicVariableValue]? = nil
+        ) {
+            print(
+                "signedUrl, overrides, customLlmExtraBody, and dynamicVariables are not yet supported by OutspeedSwift. Ignoring them."
+            )
             self.signedUrl = signedUrl
             agentId = nil
             self.overrides = overrides
@@ -193,8 +198,14 @@ public class OutspeedSDK : ObservableObject {
             self.dynamicVariables = dynamicVariables
         }
 
-        public init(agentId: String, overrides: ConversationConfigOverride? = nil, customLlmExtraBody: [String: LlmExtraBodyValue]? = nil, dynamicVariables: [String: DynamicVariableValue]? = nil) {
-            print("agentId, overrides, customLlmExtraBody, and dynamicVariables are not yet supported by OutspeedSwift. Ignoring them.")
+        public init(
+            agentId: String, overrides: ConversationConfigOverride? = nil,
+            customLlmExtraBody: [String: LlmExtraBodyValue]? = nil,
+            dynamicVariables: [String: DynamicVariableValue]? = nil
+        ) {
+            print(
+                "agentId, overrides, customLlmExtraBody, and dynamicVariables are not yet supported by OutspeedSwift. Ignoring them."
+            )
             self.agentId = agentId
             signedUrl = nil
             self.overrides = overrides
@@ -202,7 +213,6 @@ public class OutspeedSDK : ObservableObject {
             self.dynamicVariables = dynamicVariables
         }
     }
-
 
     class Connection: @unchecked Sendable {
         let socket: URLSessionWebSocketTask
@@ -225,19 +235,24 @@ public class OutspeedSDK : ObservableObject {
                         switch message {
                         case let .string(text):
                             guard let data = text.data(using: .utf8),
-                                  let json = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
-                                  let type = json["type"] as? String,
-                                  type == "conversation_initiation_metadata",
-                                  let metadata = json["conversation_initiation_metadata_event"] as? [String: Any],
-                                  let conversationId = metadata["conversation_id"] as? String,
-                                  let audioFormat = metadata["agent_output_audio_format"] as? String
+                                let json = try? JSONSerialization.jsonObject(
+                                    with: data, options: []) as? [String: Any],
+                                let type = json["type"] as? String,
+                                type == "conversation_initiation_metadata",
+                                let metadata = json["conversation_initiation_metadata_event"]
+                                    as? [String: Any],
+                                let conversationId = metadata["conversation_id"] as? String,
+                                let audioFormat = metadata["agent_output_audio_format"] as? String
                             else {
-                                continuation.resume(throwing: OutspeedError.invalidInitialMessageFormat)
+                                continuation.resume(
+                                    throwing: OutspeedError.invalidInitialMessageFormat)
                                 return
                             }
 
-                            let sampleRate = Int(audioFormat.replacingOccurrences(of: "pcm_", with: "")) ?? 16000
-                            continuation.resume(returning: (conversationId: conversationId, sampleRate: sampleRate))
+                            let sampleRate =
+                                Int(audioFormat.replacingOccurrences(of: "pcm_", with: "")) ?? 16000
+                            continuation.resume(
+                                returning: (conversationId: conversationId, sampleRate: sampleRate))
 
                         case .data:
                             continuation.resume(throwing: OutspeedError.unexpectedBinaryMessage)
@@ -265,7 +280,7 @@ public class OutspeedSDK : ObservableObject {
         private let callbacks: Callbacks
 
         private var inputVolumeUpdateTimer: Timer?
-        private let inputVolumeUpdateInterval: TimeInterval = 0.1 // Update every 100ms
+        private let inputVolumeUpdateInterval: TimeInterval = 0.1  // Update every 100ms
         private var currentInputVolume: Float = 0.0
 
         private var _mode: Mode = .listening
@@ -275,7 +290,9 @@ public class OutspeedSDK : ObservableObject {
 
         private func setupInputVolumeMonitoring() {
             DispatchQueue.main.async {
-                self.inputVolumeUpdateTimer = Timer.scheduledTimer(withTimeInterval: self.inputVolumeUpdateInterval, repeats: true) { [weak self] _ in
+                self.inputVolumeUpdateTimer = Timer.scheduledTimer(
+                    withTimeInterval: self.inputVolumeUpdateInterval, repeats: true
+                ) { [weak self] _ in
                     guard let self = self else { return }
                     self.callbacks.onVolumeUpdate(self.currentInputVolume)
                 }
@@ -296,28 +313,36 @@ public class OutspeedSDK : ObservableObject {
         ///   - clientTools: Client tools callbacks (optional)
         ///   - apiKey: API key for the conversation
         /// - Returns: A started `Conversation` instance
-        public static func startSession(config: SessionConfig, callbacks: Callbacks = Callbacks(), apiKey: String?, provider: Provider = .outspeed) async throws -> Conversation {
+        public static func startSession(
+            config: SessionConfig, callbacks: Callbacks = Callbacks(), apiKey: String?,
+            provider: Provider = .outspeed
+        ) async throws -> Conversation {
             // Step 2: Create the WebSocket connection
             #if os(iOS)
-            // Prevent usage on iOS versions newer than 18.3.1
-            if #available(iOS 18.4, *) {
-                print("OutspeedSwift build is not intended for iOS versions after 18.3.1")
-                fatalError("OutspeedSwift build is not intended for iOS versions after 18.3.1")
-            }
+                // Prevent usage on iOS versions newer than 18.3.1
+                if #available(iOS 18.4, *) {
+                    print("OutspeedSwift build is not intended for iOS versions after 18.3.1")
+                    fatalError("OutspeedSwift build is not intended for iOS versions after 18.3.1")
+                }
             #endif
-
 
             let connection = WebRTCManager()
 
             if provider == .outspeed {
-                guard let apiKey = apiKey ?? ProcessInfo.processInfo.environment["OUTSPEED_API_KEY"] else {
-                    callbacks.onError("No API key provided. Please set OUTSPEED_API_KEY in your environment variables or pass an apiKey parameter.", nil)
+                guard let apiKey = apiKey ?? ProcessInfo.processInfo.environment["OUTSPEED_API_KEY"]
+                else {
+                    callbacks.onError(
+                        "No API key provided. Please set OUTSPEED_API_KEY in your environment variables or pass an apiKey parameter.",
+                        nil)
                     throw OutspeedError.invalidConfiguration
                 }
             }
             if provider == .openai {
-                guard let apiKey = apiKey ?? ProcessInfo.processInfo.environment["OPENAI_API_KEY"] else {
-                    callbacks.onError("No API key provided. Please set OPENAI_API_KEY in your environment variables or pass an apiKey parameter.", nil)
+                guard let apiKey = apiKey ?? ProcessInfo.processInfo.environment["OPENAI_API_KEY"]
+                else {
+                    callbacks.onError(
+                        "No API key provided. Please set OPENAI_API_KEY in your environment variables or pass an apiKey parameter.",
+                        nil)
                     throw OutspeedError.invalidConfiguration
                 }
             }
@@ -331,8 +356,8 @@ public class OutspeedSDK : ObservableObject {
                 print("onVolumeUpdate is not supported by OutspeedSwift. Ignoring it.")
             }
 
-
-            try connection.startConnection(config: config, apiKey: apiKey ?? "", callbacks: callbacks, provider: provider)
+            try connection.startConnection(
+                config: config, apiKey: apiKey ?? "", callbacks: callbacks, provider: provider)
 
             // Step 5: Initialize the Conversation
             let conversation = Conversation(connection: connection, callbacks: callbacks)
@@ -356,7 +381,6 @@ public class OutspeedSDK : ObservableObject {
         //         }
         //     }
         // }
-
 
         // /// Send a contextual update event
         // public func sendContextualUpdate(_ text: String) {
@@ -427,10 +451,10 @@ public class OutspeedSDK : ObservableObject {
     }
 }
 
-
 extension Encodable {
     var dictionary: [String: Any]? {
         guard let data = try? JSONEncoder().encode(self) else { return nil }
-        return (try? JSONSerialization.jsonObject(with: data, options: .allowFragments)) as? [String: Any]
+        return (try? JSONSerialization.jsonObject(with: data, options: .allowFragments))
+            as? [String: Any]
     }
 }
