@@ -25,6 +25,7 @@ public class WebRTCManager: NSObject, ObservableObject {
     private var systemInstructions: String = ""
     private var voice: String = "alloy"
     private var provider: Provider = .openai
+    private var audioSession: AVAudioSession?
 
     // WebRTC references
     private var peerConnection: RTCPeerConnection?
@@ -296,20 +297,105 @@ public class WebRTCManager: NSObject, ObservableObject {
             with: config, constraints: constraints, delegate: self)
     }
 
+    func audioPortDescription(_ portType: AVAudioSession.Port) -> String {
+        switch portType {
+        case .builtInSpeaker:
+            return "Built-in Speaker (Loud Speaker)"
+        case .builtInReceiver:
+            return "Built-in Receiver (Earpiece)"
+        case .headphones:
+            return "Wired Headphones"
+        case .bluetoothA2DP:
+            return "Bluetooth A2DP"
+        case .bluetoothHFP:
+            return "Bluetooth Hands-Free"
+        case .bluetoothLE:
+            return "Bluetooth LE"
+        case .builtInMic:
+            return "Built-in Microphone"
+        case .headsetMic:
+            return "Headset Microphone"
+        case .airPlay:
+            return "AirPlay"
+        case .carAudio:
+            return "Car Audio"
+        case .usbAudio:
+            return "USB Audio"
+        default:
+            return "Unknown: \(portType.rawValue)"
+        }
+    }
+
+    private func logCurrentAudioRoute() {
+        guard let audioSession = self.audioSession else { return }
+        let currentRoute = audioSession.currentRoute
+
+        print("=== Current Audio Route ===")
+
+        // Check if audio is going to speaker or earpiece
+        let isUsingSpeaker = currentRoute.outputs.contains { output in
+            output.portType == .builtInSpeaker
+        }
+
+        let isUsingEarpiece = currentRoute.outputs.contains { output in
+            output.portType == .builtInReceiver
+        }
+
+        print("🔊 Using Speaker: \(isUsingSpeaker)")
+        print("📱 Using Earpiece: \(isUsingEarpiece)")
+
+        // Log all outputs with details
+        for output in currentRoute.outputs {
+            let description = self.audioPortDescription(output.portType)
+            print("📤 Output: \(output.portName) (\(description))")
+        }
+
+        // Log all inputs
+        for input in currentRoute.inputs {
+            let description = self.audioPortDescription(input.portType)
+            print("📥 Input: \(input.portName) (\(description))")
+        }
+
+        print("========================")
+    }
+
     private func configureAudioSession() {
         // Create a local copy of callbacks to prevent data races
         let localCallbacks = self.callbacks
 
+        self.audioSession = AVAudioSession.sharedInstance()
+        guard let audioSession = self.audioSession else {
+            print("Failed to get audio session")
+            return
+        }
+
         do {
-            let audioSession = AVAudioSession.sharedInstance()
+
             try audioSession.setCategory(
                 .playAndRecord, mode: .voiceChat,
                 options: [.defaultToSpeaker, .allowBluetooth, .duckOthers])
             try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
-            try audioSession.overrideOutputAudioPort(.speaker)  // because some phones might not respect .defaultToSpeaker option & play through earpiece
         } catch {
             print("Failed to configure AVAudioSession: \(error)")
             localCallbacks.onError("Failed to configure AVAudioSession: \(error)", nil)
+        }
+
+        self.logCurrentAudioRoute()
+
+        // some phones might not respect .defaultToSpeaker option & play through earpiece
+        // delay so that session is r
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            do {
+                try audioSession.overrideOutputAudioPort(.speaker)
+                logger.info("Successfully overridden output audio port to speaker.")
+                self.logCurrentAudioRoute()
+            } catch {
+                logger.error(
+                    "Failed to override output audio port to speaker: \(error.localizedDescription)"
+                )
+                // Optionally trigger onError callback
+                // conversation.callbacks.onError("Failed to set speaker output", error)
+            }
         }
     }
 
