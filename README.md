@@ -46,7 +46,7 @@ And add `OutspeedSDK` to your target dependencies:
 
 ## Requirements
 
-- iOS >=18.0 <18.4
+- iOS >=18.0
 - Swift 6.1+
 
 ## Usage
