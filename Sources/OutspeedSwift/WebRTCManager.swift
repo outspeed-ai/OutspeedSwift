@@ -292,7 +292,7 @@ public class WebRTCManager: NSObject, ObservableObject {
         
         do {
             let audioSession = AVAudioSession.sharedInstance()
-            try audioSession.setCategory(.playAndRecord, mode: .voiceChat, options: [.defaultToSpeaker, .allowBluetooth])
+            try audioSession.setCategory(.playAndRecord, options: [.defaultToSpeaker, .allowBluetooth, .duckOthers])
             try audioSession.overrideOutputAudioPort(.speaker) // because some phones might not respect .defaultToSpeaker option & play through earpiece
             try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
         } catch {
