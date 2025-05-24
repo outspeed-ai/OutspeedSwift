@@ -23,6 +23,7 @@ public class WebRTCManager: NSObject, ObservableObject {
     // Model & session config
     private var modelName: String = "gpt-4o-mini-realtime-preview-2024-12-17"
     private var systemInstructions: String = ""
+    private var firstMessage: String? = nil
     private var voice: String = "alloy"
     private var provider: Provider = .openai
     private var audioSession: AVAudioSession?
@@ -86,6 +87,7 @@ public class WebRTCManager: NSObject, ObservableObject {
         }
 
         let systemInstructions = config.overrides?.agent?.prompt?.prompt
+        self.firstMessage = config.overrides?.agent?.firstMessage
 
         // Create an SDP offer
         let constraints = RTCMediaConstraints(
@@ -279,6 +281,21 @@ public class WebRTCManager: NSObject, ObservableObject {
         } catch {
             print("Failed to serialize session.update JSON: \(error)")
             localCallbacks.onError("Failed to serialize session.update JSON: \(error)", nil)
+        }
+
+        if firstMessage != nil && provider == .outspeed {
+            do {
+                let jsonData = try JSONSerialization.data(withJSONObject: [
+                    "type": "outspeed.custom.speak",
+                    "text": firstMessage,
+                ])
+                let buffer = RTCDataBuffer(data: jsonData, isBinary: false)
+                dc.sendData(buffer)
+                print("session.update event sent.")
+            } catch {
+                print("Failed to serialize session.update JSON: \(error)")
+                localCallbacks.onError("Failed to serialize session.update JSON: \(error)", nil)
+            }
         }
     }
 
