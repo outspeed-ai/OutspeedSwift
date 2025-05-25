@@ -66,6 +66,15 @@ public class WebRTCManager: NSObject, ObservableObject {
 
         // Store updated config
         self.provider = provider
+    
+
+        // Extract voice configuration from session config overrides
+        if let ttsConfig = config.overrides?.tts, let voiceId = ttsConfig.voiceId {
+            self.voice = voiceId
+        } else {
+            // Use default voice for the provider
+            self.voice = provider.defaultVoice
+        }
 
         setupPeerConnection()
         setupLocalAudio()
@@ -246,7 +255,7 @@ public class WebRTCManager: NSObject, ObservableObject {
                 "session": [
                     "modalities": ["text", "audio"],  // Enable both text and audio
                     //                    "instructions": systemInstructions,
-                    "voice": "tara",
+                    "voice": voice,
                     "input_audio_transcription": [
                         "model": provider == .openai ? "whisper-1" : "whisper-v3-turbo"
                     ],
@@ -479,7 +488,7 @@ public class WebRTCManager: NSObject, ObservableObject {
                 "model": "Orpheus-3b",
                 "modalities": ["text", "audio"],
                 "instructions": instructions ?? Provider.outspeed.defaultSystemMessage,
-                "voice": "tara",
+                "voice": voice,
                 "input_audio_format": "pcm16",
                 "output_audio_format": "pcm16",
                 "input_audio_transcription": [
