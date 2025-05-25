@@ -30,7 +30,7 @@ public enum Provider: String, Sendable {
         case .openai:
             return ["alloy", "ash", "ballad", "coral", "echo", "sage", "shimmer", "verse"]
         case .outspeed:
-            return ["tara", "leah", "jess", "leo", "dan", "mia", "zac", "zoe", "julia"]
+            return OutspeedSDK.OrpheusVoice.allCases.map { $0.rawValue }
         }
     }
 
@@ -48,7 +48,7 @@ public enum Provider: String, Sendable {
         case .openai:
             return "alloy"
         case .outspeed:
-            return "tara"
+            return OutspeedSDK.OrpheusVoice.default.rawValue
         }
     }
 
