@@ -2,13 +2,12 @@ import AVFoundation
 import Combine
 import Foundation
 import SwiftUI
-import UIKit
 import WebRTC
 import os.log
 
 /// Main class for OutspeedSwift package
 public class OutspeedSDK: ObservableObject {
-    public static let version: String = "0.0.2"
+    public static let version: String = "0.0.3"
     public init() {
         // #if os(iOS)
         // // Prevent usage on iOS versions newer than 18.3.1
@@ -86,6 +85,22 @@ public class OutspeedSDK: ObservableObject {
     public enum Language: String, Codable, Sendable {
         case en, ja, zh, de, hi, fr, ko, pt, it, es, id, nl, tr, pl, sv, bg, ro, ar, cs, el, fi, ms,
             da, ta, uk, ru, hu, no, vi
+    }
+
+    /// Available voices for the Orpheus model
+    public enum OrpheusVoice: String, Codable, Sendable, CaseIterable {
+        case tara = "tara"
+        case leah = "leah"
+        case jess = "jess"
+        case leo = "leo"
+        case dan = "dan"
+        case mia = "mia"
+        case zac = "zac"
+        case zoe = "zoe"
+        case julia = "julia"
+        
+        /// Default voice for Orpheus model
+        public static let `default`: OrpheusVoice = .tara
     }
 
     public struct AgentPrompt: Codable, Sendable {
@@ -184,22 +199,8 @@ public class OutspeedSDK: ObservableObject {
         let dynamicVariables: [String: DynamicVariableValue]?
 
         public init(
-            signedUrl: String, overrides: ConversationConfigOverride? = nil,
-            customLlmExtraBody: [String: LlmExtraBodyValue]? = nil,
-            dynamicVariables: [String: DynamicVariableValue]? = nil
-        ) {
-            print(
-                "signedUrl, customLlmExtraBody, and dynamicVariables are not yet supported by OutspeedSwift. Ignoring them."
-            )
-            self.signedUrl = signedUrl
-            self.agentId = nil
-            self.overrides = overrides
-            self.customLlmExtraBody = customLlmExtraBody
-            self.dynamicVariables = dynamicVariables
-        }
-
-        public init(
-            agentId: String,
+            agentId: String? = nil,
+            signedUrl: String? = nil,
             overrides: ConversationConfigOverride? = nil,
             customLlmExtraBody: [String: LlmExtraBodyValue]? = nil,
             dynamicVariables: [String: DynamicVariableValue]? = nil
