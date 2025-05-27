@@ -72,7 +72,7 @@ Task {
 
 ## ElevenLabs Swift Compatibilty
 
-OutspeedSDK is fully compatible with Elevenlabs Swift SDK specifications, although some features might not be fully supported yet.
+OutspeedSDK is fully compatible with Elevenlabs Swift SDK specifications, but registering tools is not supported yet.
 
 To switch from ElevenLabsSDK:
 
