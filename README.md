@@ -115,7 +115,59 @@ To switch from ElevenLabsSDK:
 
 ### Configuring System Prompt, First Message, and Voice
 
-You can customize the AI's behavior, initial message, and voice using configuration objects:
+#### Configuration Options
+
+- **AgentConfig**: Customize the AI's behavior and initial response
+
+  - `prompt`: System instructions that define the AI's personality and behavior
+  - `firstMessage`: Optional initial message the AI will speak when the conversation starts
+
+- **TTSConfig**: Configure voice settings
+
+  - `voiceId`: Select from available voices (e.g., `OutspeedSDK.OrpheusVoice.zac.rawValue`)
+
+> [!NOTE]
+> All configuration objects (`AgentConfig`, `TTSConfig`, and `ConversationConfigOverride`) are fully compatible with ElevenLabs SDK specifications.
+
+#### Configuration Examples
+
+**System Prompt:**
+
+```swift
+let agentConfig = OutspeedSDK.AgentConfig(
+    prompt: "You are a helpful assistant with a witty personality."
+)
+
+let config = OutspeedSDK.SessionConfig(
+    overrides: OutspeedSDK.ConversationConfigOverride(agent: agentConfig)
+)
+```
+
+**First Message:**
+
+```swift
+let agentConfig = OutspeedSDK.AgentConfig(
+    firstMessage: "Hey there, how can I help you with Outspeed today?"
+)
+
+let config = OutspeedSDK.SessionConfig(
+    overrides: OutspeedSDK.ConversationConfigOverride(agent: agentConfig)
+)
+```
+
+**Voice Selection:**
+
+```swift
+let ttsConfig = OutspeedSDK.TTSConfig(voiceId: OutspeedSDK.OrpheusVoice.zac.rawValue)
+
+let config = OutspeedSDK.SessionConfig(
+    overrides: OutspeedSDK.ConversationConfigOverride(tts: ttsConfig)
+)
+```
+
+#### Combined Configuration
+
+Example snippet to customize the AI's behavior, initial message, and voice together using configuration objects:
 
 ```swift
 // Configure the AI agent's behavior and initial message (ElevenLabs compatible)
@@ -162,20 +214,6 @@ Task {
     }
 }
 ```
-
-#### Configuration Options
-
-- **AgentConfig**: Customize the AI's behavior and initial response
-
-  - `prompt`: System instructions that define the AI's personality and behavior
-  - `firstMessage`: Optional initial message the AI will speak when the conversation starts
-
-- **TTSConfig**: Configure voice settings
-
-  - `voiceId`: Select from available voices (e.g., `OutspeedSDK.OrpheusVoice.zac.rawValue`)
-
-> [!NOTE]
-> All configuration objects (`AgentConfig`, `TTSConfig`, and `ConversationConfigOverride`) are fully compatible with ElevenLabs SDK specifications.
 
 ## Examples
 
