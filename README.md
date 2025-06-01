@@ -14,8 +14,7 @@ Swift SDK for the Outspeed Live API that enables real-time voice conversations u
 1. Open Your Project in Xcode
 2. Go to `File` > `Add Packages...`
 3. Enter Repository URL in the Search Bar: `https://github.com/outspeed-ai/OutspeedSwift`
-4. Select Version
-5. Import the SDK
+4. Import the SDK
 
    ```swift
    import OutspeedSDK
