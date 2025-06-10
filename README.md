@@ -123,7 +123,7 @@ To switch from ElevenLabsSDK:
 
 - **TTSConfig**: Configure voice settings
 
-  - `voiceId`: Select from available voices (e.g., `OutspeedSDK.OrpheusVoice.zac.rawValue`)
+  - `voiceId`: Select from available voices (e.g., `OutspeedSDK.Voice.david.rawValue`)
 
 > [!NOTE]
 > All configuration objects (`AgentConfig`, `TTSConfig`, and `ConversationConfigOverride`) are fully compatible with ElevenLabs SDK specifications.
@@ -157,7 +157,7 @@ let config = OutspeedSDK.SessionConfig(
 **Voice Selection:**
 
 ```swift
-let ttsConfig = OutspeedSDK.TTSConfig(voiceId: OutspeedSDK.OrpheusVoice.zac.rawValue)
+let ttsConfig = OutspeedSDK.TTSConfig(voiceId: OutspeedSDK.Voice.david.rawValue)
 
 let config = OutspeedSDK.SessionConfig(
     overrides: OutspeedSDK.ConversationConfigOverride(tts: ttsConfig)
@@ -176,7 +176,7 @@ let agentConfig = OutspeedSDK.AgentConfig(
 )
 
 // Configure voice selection (also ElevenLabs compatible)
-let ttsConfig = OutspeedSDK.TTSConfig(voiceId: OutspeedSDK.OrpheusVoice.zac.rawValue)
+let ttsConfig = OutspeedSDK.TTSConfig(voiceId: OutspeedSDK.Voice.david.rawValue)
 
 // Create session configuration with overrides
 let config = OutspeedSDK.SessionConfig(

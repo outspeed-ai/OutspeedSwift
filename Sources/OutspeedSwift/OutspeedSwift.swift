@@ -7,7 +7,7 @@ import os.log
 
 /// Main class for OutspeedSwift package
 public class OutspeedSDK: ObservableObject {
-    public static let version: String = "0.0.3"
+    public static let version: String = "0.0.4"
     public init() {
         // #if os(iOS)
         // // Prevent usage on iOS versions newer than 18.3.1
@@ -87,20 +87,36 @@ public class OutspeedSDK: ObservableObject {
             da, ta, uk, ru, hu, no, vi
     }
 
-    /// Available voices for the Orpheus model
-    public enum OrpheusVoice: String, Codable, Sendable, CaseIterable {
-        case tara = "tara"
-        case leah = "leah"
-        case jess = "jess"
-        case leo = "leo"
-        case dan = "dan"
-        case mia = "mia"
-        case zac = "zac"
-        case zoe = "zoe"
-        case julia = "julia"
-        
-        /// Default voice for Orpheus model
-        public static let `default`: OrpheusVoice = .tara
+    // /// Available voices for the Orpheus model
+    // public enum OrpheusVoice: String, Codable, Sendable, CaseIterable {
+    //     case tara = "tara"
+    //     case leah = "leah"
+    //     case jess = "jess"
+    //     case leo = "leo"
+    //     case dan = "dan"
+    //     case mia = "mia"
+    //     case zac = "zac"
+    //     case zoe = "zoe"
+    //     case julia = "julia"
+    //
+    //     /// Default voice for Orpheus model
+    //     public static let `default`: OrpheusVoice = .tara
+    // }
+
+    /// Available voices
+    public enum Voice: String, Codable, Sendable, CaseIterable {
+        case sophie = "sophie"
+        case savannah = "savannah"
+        case brooke = "brooke"
+        case zia = "zia"
+        case corinne = "corinne"
+        case david = "david"
+        case griffin = "griffin"
+        case carson = "carson"
+        case ethan = "ethan"
+
+        /// Default voice
+        public static let `default`: Voice = .sophie
     }
 
     public struct AgentPrompt: Codable, Sendable {
