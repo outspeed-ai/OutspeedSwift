@@ -485,7 +485,7 @@ public class WebRTCManager: NSObject, ObservableObject {
         if provider == .outspeed {
             // Create session configuration
             sessionConfig = [
-                "model": "Orpheus-3b",
+                "model": "outspeed-v1",
                 "modalities": ["text", "audio"],
                 "instructions": instructions ?? Provider.outspeed.defaultSystemMessage,
                 "voice": voice,
