@@ -21,7 +21,7 @@ public enum Provider: String, Sendable {
                 "gpt-4o-realtime-preview-2024-12-17",
             ]
         case .outspeed:
-            return ["Orpheus-3b"]
+            return ["outspeed-v1"]
         }
     }
 
@@ -30,7 +30,7 @@ public enum Provider: String, Sendable {
         case .openai:
             return ["alloy", "ash", "ballad", "coral", "echo", "sage", "shimmer", "verse"]
         case .outspeed:
-            return OutspeedSDK.OrpheusVoice.allCases.map { $0.rawValue }
+            return OutspeedSDK.Voice.allCases.map { $0.rawValue }
         }
     }
 
@@ -39,7 +39,7 @@ public enum Provider: String, Sendable {
         case .openai:
             return "gpt-4o-mini-realtime-preview-2024-12-17"
         case .outspeed:
-            return "Orpheus-3b"
+            return "outspeed-v1"
         }
     }
 
@@ -48,7 +48,7 @@ public enum Provider: String, Sendable {
         case .openai:
             return "alloy"
         case .outspeed:
-            return OutspeedSDK.OrpheusVoice.default.rawValue
+            return OutspeedSDK.Voice.default.rawValue
         }
     }
 
